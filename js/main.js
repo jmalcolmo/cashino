@@ -23,10 +23,36 @@ function spawnCustomer(machine) {
   State.customers.push(c);
 }
 
-// Apply click boost to a machine. Called from input click and auto-clicker.
-function applyClickBoost(machine) {
-  machine.clickBoost      = Math.min(machine.clickBoost + State.clickBoostPerClick, State.clickBoostMax);
-  machine.clickBoostTimer = State.clickBoostDuration;
+// Record a spin result: update money, IPS window, and spawn particles.
+function processSpinResult(machine, amount) {
+  State.money += amount;
+  if (State.money < 0) State.money = 0;
+  recordIncome(amount);
+
+  const sp    = machine.screenPos;
+  const posX  = sp.x + (Math.random() - 0.5) * 28;
+  const posY  = sp.y - machine.def.boxH - 4;
+  const color = amount >= 0 ? '#39ff14' : '#ff3333';
+  const label = (amount >= 0 ? '+' : '') + '$' + Math.abs(amount).toFixed(0);
+  State.particles.push(new FloatingText(posX, posY, label, color));
+
+  if (Math.abs(amount) >= SPARK_BIG_THRESH) {
+    const sparkColor = amount < 0 ? '#ff3333' : '#ffd700';
+    for (let i = 0; i < SPARK_COUNT; i++) {
+      State.particles.push(new Spark(sp.x, sp.y - machine.def.boxH * 0.5, sparkColor));
+    }
+  }
+}
+
+// Trigger click-spins on a machine. Uses the fractional accumulator so 1.5x alternates 1/2 spins.
+// Called from player input and the auto-clicker NPC.
+function applyClick(machine) {
+  if (machine.customers.length === 0) return;
+  machine.clickAccum += State.clickMultiplier;
+  while (machine.clickAccum >= 1) {
+    processSpinResult(machine, machine.doSpin());
+    machine.clickAccum -= 1;
+  }
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -108,33 +134,15 @@ function loop(now) {
       State.autoClickTimer = 0;
       if (State.machines.length > 0) {
         const m = State.machines[Math.floor(Math.random() * State.machines.length)];
-        applyClickBoost(m);
+        applyClick(m);
       }
     }
   }
 
-  // Machines
+  // Machines (passive timer-driven spins)
   State.machines.forEach(m => {
     const spin = m.update(dt);
-    if (spin === null) return;
-
-    State.money += spin;
-    if (State.money < 0) State.money = 0;
-    recordIncome(spin);
-
-    const sp    = m.screenPos;
-    const posX  = sp.x + (Math.random() - 0.5) * 28;
-    const posY  = sp.y - m.def.boxH - 4;
-    const color = spin >= 0 ? '#39ff14' : '#ff3333';
-    const label = (spin >= 0 ? '+' : '') + '$' + Math.abs(spin).toFixed(0);
-    State.particles.push(new FloatingText(posX, posY, label, color));
-
-    if (Math.abs(spin) >= 14) {
-      const sparkColor = spin < 0 ? '#ff3333' : '#ffd700';
-      for (let i = 0; i < 14; i++) {
-        State.particles.push(new Spark(sp.x, sp.y - m.def.boxH * 0.5, sparkColor));
-      }
-    }
+    if (spin !== null) processSpinResult(m, spin);
   });
 
   // Customers

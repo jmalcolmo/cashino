@@ -5,6 +5,29 @@ The top entry is always the most recent push. Entries are added before every com
 
 ---
 
+## [0.4.0] 2026-05-04 - Click-to-spin system, repeatable Power Click upgrade
+
+### Changed
+- Clicking a machine now directly triggers an immediate spin instead of applying a speed boost to the spin timer
+- Power Click is now a repeatable upgrade (max 18 purchases, x1.8 cost scale) that adds +0.5 spins per click per purchase, stacking to a 10x click multiplier
+  - The fractional part uses a per-machine accumulator: at 1.5x, clicks alternate between 1 and 2 spins
+- Auto Clicker now triggers `applyClick` instead of a boost, meaning it fires real spins and benefits from Power Click upgrades
+- Removed Extended Boost upgrade: the boost duration concept no longer applies with the new system
+
+### Removed
+- Click boost system entirely: `machine.clickBoost`, `machine.clickBoostTimer`, boost decay logic, boost ring visual, speed multiplier label above machines
+- `CLICK_BOOST_PER_CLICK`, `CLICK_BOOST_PER_CLICK_UPGRADED`, `CLICK_BOOST_MAX`, `CLICK_BOOST_DURATION`, `CLICK_BOOST_DURATION_UPGRADED` constants
+- `SHOP_EXTENDED_BOOST_COST` constant
+- `applyClickBoost()` function in main.js
+
+### Added
+- `Machine.doSpin()` public method: executes one spin (including shake and customers.length multiplier); called by both the passive timer and click handlers
+- `processSpinResult(machine, amount)` helper in main.js: extracted from the game loop, handles money, IPS recording, and particle spawning
+- `applyClick(machine)` in main.js: the single entry point for player clicks and auto-clicker; uses `machine.clickAccum` for fractional multiplier handling
+- `machine.clickAccum` field: carries over the fractional part of the click multiplier between clicks
+
+---
+
 ## [0.3.0] 2026-05-04 - HUD earnings history, splitscreen upgrade, economy rebalance
 
 ### Added

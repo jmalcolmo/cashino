@@ -309,37 +309,32 @@ All particles implement `update(dt)` returning `true` if alive, `false` if expir
 
 ---
 
-## 8. Click Boost
+## 8. Click System
 
 ### 8.1 Mechanic
 - Player clicks directly on a machine tile on the game canvas
 - Click is converted from screen coords to tile coords via `ISO.toTile`; matched against `State.machines`
-- Each click calls `applyClickBoost(machine)` in `main.js`, which:
-  - Adds `State.clickBoostPerClick` to `machine.clickBoost` (capped at `State.clickBoostMax`)
-  - Resets `machine.clickBoostTimer` to `State.clickBoostDuration`
-- The boost accelerates the machine's spin countdown: `spinTimer -= dt * (1 + clickBoost)`
-- At max boost (+1.0x), machines spin at 2x their base rate
-- **Decay:** after `clickBoostDuration` seconds of no clicks, `clickBoost` resets to 0
-- No global cooldown - each machine tracks its own boost independently
+- Each click calls `applyClick(machine)` in `main.js`, which:
+  - Adds `State.clickMultiplier` to `machine.clickAccum`
+  - Fires `machine.doSpin()` once for each whole number in `clickAccum`, subtracting 1.0 each time
+  - The fractional remainder carries over to the next click
+- At the base 1.0x multiplier, each click fires exactly 1 spin
+- At 1.5x (after 1 Power Click), clicks alternate between 1 and 2 spins (0.5 remainder accumulates)
+- Each triggered spin runs the full spin table roll and awards money instantly
 
-### 8.2 Defaults (upgradeable via shop)
-| Property | Default | Upgraded |
+### 8.2 Click Multiplier (upgradeable via shop)
+| State | Click Multiplier | Spins per Click |
 |---|---|---|
-| Boost per click | +0.1x | +0.2x (Power Click) |
-| Max stack | +1.0x (2x speed) | - |
-| Boost duration | 5s | 8s (Extended Boost) |
+| Base | 1.0x | 1 |
+| Power Click x1 | 1.5x | 1 or 2 (alternating) |
+| Power Click x2 | 2.0x | 2 |
+| Power Click x5 | 3.5x | 3 or 4 (alternating) |
+| Power Click x18 | 10.0x | 10 |
 
-### 8.3 Visual Feedback
-When `machine.clickBoost > 0`:
-- Pulsing cyan ring around the machine top face; radius scales with boost level
-- `+N%` label drawn above the machine in cyan
-- Customer count badge shifts up to avoid overlap
-- Ring pulse rate is fast (10 Hz) to convey urgency
-
-### 8.4 Auto Clicker NPC
+### 8.3 Auto Clicker NPC
 - Purchased via shop upgrade ($4,500)
-- Every 8 seconds, calls `applyClickBoost` on a random machine
-- Uses the same `applyClickBoost` path as player input - upgrades to boost-per-click and duration apply equally
+- Every 8 seconds, calls `applyClick` on a random machine
+- Uses the same `applyClick` path as player input - Power Click upgrades apply equally to auto-clicks
 
 ---
 
@@ -376,12 +371,11 @@ cost = baseCost × scaleFactor^purchased
 | # | Name | Base Cost | Scale | Max | Effect |
 |---|---|---|---|---|---|
 | 1 | SLOT MACHINE | $200 | x1.45 | 8 | Place new slot machine, spawn 1 customer (or 2 if Splitscreen active) |
-| 2 | POWER CLICK | $900 | x99 | 1 | Boost per click: +0.1x -> +0.2x |
+| 2 | POWER CLICK | $900 | x1.8 | 18 | +0.5 spins per click (accumulator handles fractional; stacks to 10x) |
 | 3 | SPIN FASTER | $1,100 | x2.2 | 3 | All machines -20% spin interval (stacks) |
-| 4 | EXTENDED BOOST | $2,200 | x99 | 1 | Click boost duration: 5s -> 8s |
-| 5 | AUTO CLICKER | $4,500 | x99 | 1 | Clicks a random machine every 8s |
-| 6 | EXPAND FLOOR | $6,000 | x99 | 1 | 6x6 -> 10x10 tiles, re-places machines |
-| 7 | SPLITSCREEN | $15,000 | x99 | 1 | Each machine seats 2 customers; spin result x customers.length doubles income |
+| 4 | AUTO CLICKER | $4,500 | x99 | 1 | Clicks a random machine every 8s (uses click multiplier) |
+| 5 | EXPAND FLOOR | $6,000 | x99 | 1 | 6x6 -> 10x10 tiles, re-places machines |
+| 6 | SPLITSCREEN | $15,000 | x99 | 1 | Each machine seats 2 customers; spin result x customers.length doubles income |
 
 ### 9.5 Shop Visibility
 Items are hidden once `purchased >= maxCount`. The list dynamically rebuilds when item count changes. Affordability classes update every 6 frames without full DOM rebuilds (only inner class changes unless count changed).
@@ -503,7 +497,7 @@ The CRT canvas has `opacity: 0.35` in CSS (combined with its internal opacity va
 
 - **Early game tension:** Start with $150, first machine costs $200. Player needs only $50 more - roughly 1 minute at base speed. The faster first-machine hook keeps early play engaging; cost scaling at x1.45 still creates a meaningful wall by machine 4-5.
 - **Scaling:** Each additional slot costs 45% more. 8 machines = $500 + $725 + $1051 + ... - gets very expensive. Later machines must be cheaper per income unit or player hits a wall.
-- **Click boost value:** At base stats (+0.1x per click, 5s window), spamming a machine to max (+1.0x) doubles its spin rate for 5s. On a base-speed machine (~$0.74/s), that's roughly +$0.74 in extra income per 5s window - a meaningful but not game-breaking reward for active play. Power Click doubles the per-click increment, making max stack reachable in 5 clicks instead of 10.
+- **Click value:** At base (1x multiplier), clicking a machine fires 1 immediate spin worth ~$1.63 EV. At 10x multiplier (18 Power Clicks), one click fires 10 spins (~$16.25 EV). Clicking all 9 machines at 10x = ~$146 per click-round. This is the late-game active play fantasy - one pass over the floor and every machine rolls hard.
 - **Math rule:** The spin table for every machine tier must produce positive expected value for the house. It is acceptable (and desirable) for the short-term rolling average to go negative sometimes. The 5-second IPS display will show red during downswings. This is intentional visual chaos.
 
 ---

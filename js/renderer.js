@@ -106,34 +106,6 @@ const Renderer = {
     ctx.fill();
 
     ctx.restore();
-
-    // Pulsing ring when boosted
-    if (m.clickBoost > 0) {
-      ctx.save();
-      const boostPulse = 0.55 + 0.45 * Math.sin(State.tick * 10 + m.reelPhase);
-      ctx.globalAlpha  = boostPulse * Math.min(m.clickBoost + 0.3, 1);
-      ctx.strokeStyle  = '#00d4ff';
-      ctx.shadowColor  = '#00d4ff';
-      ctx.shadowBlur   = 18;
-      ctx.lineWidth    = 2;
-      ctx.beginPath();
-      ctx.arc(x, y - bH * 0.55, 16 + m.clickBoost * 6, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Speed multiplier label - always visible, cyan when boosted, dim when idle
-    ctx.save();
-    ctx.font        = '6px "Press Start 2P"';
-    ctx.textAlign   = 'center';
-    const mult      = (1 + m.clickBoost).toFixed(1);
-    const boosted   = m.clickBoost > 0;
-    ctx.fillStyle   = boosted ? '#00d4ff' : '#334455';
-    ctx.shadowColor = boosted ? '#00d4ff' : 'transparent';
-    ctx.shadowBlur  = boosted ? 8 : 0;
-    ctx.globalAlpha = boosted ? 0.95 : 0.6;
-    ctx.fillText(`${mult}x`, x, y - bH - 8);
-    ctx.restore();
   },
 
   _drawParticles(ctx) {

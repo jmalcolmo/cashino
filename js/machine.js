@@ -38,54 +38,43 @@ class Machine {
     this.shakeTimer     = 0;
     this.shakeAmount    = 0;
     this.reelPhase      = Math.random() * Math.PI * 2;
-    this.active         = true;
-
-    // Click boost: each click adds speed. Timer resets on each click; expires = no boost.
-    this.clickBoost      = 0;
-    this.clickBoostTimer = 0;
+    this.active     = true;
+    this.clickAccum = 0;  // fractional accumulator for click multiplier
   }
 
   // Returns house profit amount (positive = earn, negative = pay out), or null if no spin.
   update(dt) {
     if (this.customers.length === 0) return null;
 
-    // Decay boost timer; reset boost when it expires
-    if (this.clickBoostTimer > 0) {
-      this.clickBoostTimer -= dt;
-      if (this.clickBoostTimer <= 0) {
-        this.clickBoostTimer = 0;
-        this.clickBoost      = 0;
-      }
-    }
-
     this.reelPhase += dt * 6;
     if (this.shakeTimer > 0) this.shakeTimer -= dt;
 
-    // Click boost accelerates the spin countdown directly
-    this.spinTimer -= dt * (1 + this.clickBoost);
+    this.spinTimer -= dt;
 
     if (this.spinTimer <= 0) {
-      this.spinTimer = this.spinInterval * (0.85 + Math.random() * 0.3);
-      return this._spin() * this.customers.length;
+      this.spinTimer = this.spinInterval * (SPIN_JITTER_MIN + Math.random() * SPIN_JITTER_RANGE);
+      return this.doSpin();
     }
     return null;
   }
 
-  _spin() {
+  // Public: execute one spin and return the house profit (already multiplied by customer count).
+  // Called by both the passive timer (update) and click handlers.
+  doSpin() {
     const roll = Math.random();
     let cum = 0;
     for (const entry of this.def.spinTable) {
       cum += entry.chance;
       if (roll < cum) {
-        const amount = entry.amount();
-        if (Math.abs(amount) >= 14) {
+        const amount = entry.amount() * this.customers.length;
+        if (Math.abs(amount) >= MACHINE_SHAKE_THRESH) {
           this.shakeTimer  = 0.45;
           this.shakeAmount = 7;
         }
         return amount;
       }
     }
-    return this.def.spinTable[0].amount();
+    return this.def.spinTable[0].amount() * this.customers.length;
   }
 
   get screenPos() {

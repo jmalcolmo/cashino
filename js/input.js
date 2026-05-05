@@ -4,7 +4,7 @@ const Input = {
   init() {
     const canvas = State.canvas;
 
-    // Mouse: click a machine tile to apply click boost
+    // Mouse: click a machine tile to trigger immediate spins
     canvas.addEventListener('click', e => {
       const r    = canvas.getBoundingClientRect();
       const sx   = canvas.width  / r.width;
@@ -13,7 +13,7 @@ const Input = {
       const cy   = (e.clientY - r.top)  * sy;
       const tile = ISO.toTile(cx, cy, State.floorOriginX, State.floorOriginY);
       const machine = State.machines.find(m => m.col === tile.col && m.row === tile.row);
-      if (machine) applyClickBoost(machine);
+      if (machine) applyClick(machine);
     });
 
     // Keyboard

@@ -24,13 +24,13 @@ const SHOP_ITEMS = [
   {
     id:          'power_click',
     name:        'POWER CLICK',
-    desc:        'Double boost per click.\n+0.1x speed -> +0.2x speed.',
-    baseCost:    900,
-    scaleFactor: 99,
-    maxCount:    1,
+    desc:        '+0.5 spins per click.\nStacks up to 10x.',
+    baseCost:    SHOP_POWER_CLICK_COST,
+    scaleFactor: SHOP_POWER_CLICK_SCALE,
+    maxCount:    POWER_CLICK_MAX,
     purchased:   0,
     canBuy() { return true; },
-    onBuy() { State.clickBoostPerClick = CLICK_BOOST_PER_CLICK_UPGRADED; return true; },
+    onBuy() { State.clickMultiplier += POWER_CLICK_MULT_PER_PURCHASE; return true; },
   },
   {
     id:          'spin_speed',
@@ -46,17 +46,6 @@ const SHOP_ITEMS = [
       State.machines.forEach(m => { m.spinInterval *= 0.80; });
       return true;
     },
-  },
-  {
-    id:          'extended_boost',
-    name:        'EXTENDED BOOST',
-    desc:        'Click boost lasts\n5s -> 8s before fading.',
-    baseCost:    2200,
-    scaleFactor: 99,
-    maxCount:    1,
-    purchased:   0,
-    canBuy() { return true; },
-    onBuy() { State.clickBoostDuration = CLICK_BOOST_DURATION_UPGRADED; return true; },
   },
   {
     id:          'auto_click',

@@ -26,13 +26,11 @@ const SPIN_JITTER_MIN     = 0.85;
 const SPIN_JITTER_RANGE   = 0.30;  // jitter = JITTER_MIN + rand * JITTER_RANGE
 const SPIN_SPEED_MULT     = 0.80;  // multiplied per "Spin Faster" upgrade
 
-// ─── Click Boost ─────────────────────────────────────────────────────────────
-const CLICK_BOOST_PER_CLICK          = 0.1;   // spin speed bonus per click (stacks)
-const CLICK_BOOST_PER_CLICK_UPGRADED = 0.2;   // after Power Click upgrade
-const CLICK_BOOST_MAX                = 1.0;   // max stackable bonus (1.0 = +100% speed)
-const CLICK_BOOST_DURATION           = 5;     // seconds before boost resets on inactivity
-const CLICK_BOOST_DURATION_UPGRADED  = 8;     // after Extended Boost upgrade
-const AUTO_CLICK_INTERVAL            = 8;     // seconds between auto-clicks (Auto Clicker NPC)
+// ─── Click System ────────────────────────────────────────────────────────────
+const POWER_CLICK_MULT_PER_PURCHASE = 0.5;   // click multiplier added per Power Click buy
+const SHOP_POWER_CLICK_SCALE        = 1.8;   // cost scale factor per Power Click purchase
+const POWER_CLICK_MAX               = 18;    // 18 purchases = 10x click multiplier
+const AUTO_CLICK_INTERVAL           = 8;     // seconds between auto-clicks (Auto Clicker NPC)
 
 // ─── Customer ────────────────────────────────────────────────────────────────
 const CUSTOMER_SPEED_MIN    = 65;  // px/sec
@@ -71,7 +69,6 @@ const SHOP_POWER_CLICK_COST     =   900;
 const SHOP_SPIN_FASTER_COST     =  1100;
 const SHOP_SPIN_FASTER_SCALE    =   2.2;
 const SHOP_SPIN_FASTER_MAX      =     3;
-const SHOP_EXTENDED_BOOST_COST  =  2200;
 const SHOP_AUTO_CLICK_COST      =  4500;
 const SHOP_EXPAND_FLOOR_COST    =  6000;
 const SHOP_SPLITSCREEN_COST     = 15000;

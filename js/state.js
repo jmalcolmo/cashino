@@ -13,10 +13,8 @@ const State = {
   // spin speed multiplier, upgraded via shop
   spinSpeedMult: 1.0,
 
-  // click boost settings (modified by shop upgrades)
-  clickBoostPerClick: CLICK_BOOST_PER_CLICK,
-  clickBoostMax:      CLICK_BOOST_MAX,
-  clickBoostDuration: CLICK_BOOST_DURATION,
+  // click multiplier: spins triggered per click (1 + 0.5 per Power Click purchased)
+  clickMultiplier: 1.0,
 
   // auto-clicker NPC (null until purchased)
   autoClickInterval: null,

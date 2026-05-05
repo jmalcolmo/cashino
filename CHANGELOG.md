@@ -5,6 +5,15 @@ The top entry is always the most recent push. Entries are added before every com
 
 ---
 
+## [0.2.1] 2026-05-04 - Show effective speed multiplier above each machine
+
+### Changed
+- Replaced the customer count badge (always showed "x1", looked like a multiplier) and the "+N%" boost label with a single persistent speed multiplier label
+- At base: dim "1.0x" in dark teal; when boosted: bright cyan "1.3x" etc. with glow
+- Pulsing ring remains when boost is active; multiplier label is always visible
+
+---
+
 ## [0.2.0] 2026-05-04 - Replace Hype mechanic with machine click boost
 
 ### Changed

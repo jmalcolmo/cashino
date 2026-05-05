@@ -107,10 +107,9 @@ const Renderer = {
 
     ctx.restore();
 
-    // Click boost indicator
+    // Pulsing ring when boosted
     if (m.clickBoost > 0) {
       ctx.save();
-      // Pulsing ring around the machine top, intensity scales with boost level
       const boostPulse = 0.55 + 0.45 * Math.sin(State.tick * 10 + m.reelPhase);
       ctx.globalAlpha  = boostPulse * Math.min(m.clickBoost + 0.3, 1);
       ctx.strokeStyle  = '#00d4ff';
@@ -120,31 +119,21 @@ const Renderer = {
       ctx.beginPath();
       ctx.arc(x, y - bH * 0.55, 16 + m.clickBoost * 6, 0, Math.PI * 2);
       ctx.stroke();
-
-      // Boost percentage label above the machine
-      ctx.globalAlpha = 0.92;
-      ctx.shadowBlur  = 8;
-      ctx.font        = '6px "Press Start 2P"';
-      ctx.fillStyle   = '#00d4ff';
-      ctx.shadowColor = '#00d4ff';
-      ctx.textAlign   = 'center';
-      const pct = Math.round(m.clickBoost * 100);
-      ctx.fillText(`+${pct}%`, x, y - bH - 14);
       ctx.restore();
     }
 
-    // Customer count badge
-    if (m.customers.length > 0) {
-      ctx.save();
-      ctx.font        = '6px "Press Start 2P"';
-      ctx.fillStyle   = '#fff';
-      ctx.shadowColor = def.accentColor;
-      ctx.shadowBlur  = 6;
-      ctx.textAlign   = 'center';
-      const labelY = m.clickBoost > 0 ? y - bH - 24 : y - bH - 6;
-      ctx.fillText(`x${m.customers.length}`, x, labelY);
-      ctx.restore();
-    }
+    // Speed multiplier label - always visible, cyan when boosted, dim when idle
+    ctx.save();
+    ctx.font        = '6px "Press Start 2P"';
+    ctx.textAlign   = 'center';
+    const mult      = (1 + m.clickBoost).toFixed(1);
+    const boosted   = m.clickBoost > 0;
+    ctx.fillStyle   = boosted ? '#00d4ff' : '#334455';
+    ctx.shadowColor = boosted ? '#00d4ff' : 'transparent';
+    ctx.shadowBlur  = boosted ? 8 : 0;
+    ctx.globalAlpha = boosted ? 0.95 : 0.6;
+    ctx.fillText(`${mult}x`, x, y - bH - 8);
+    ctx.restore();
   },
 
   _drawParticles(ctx) {

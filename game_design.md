@@ -44,10 +44,11 @@ idle-casino/
 ├── .claude/
 │   └── launch.json        - preview server config (npx serve, port 3457)
 └── js/
+    ├── constants.js       - all numeric constants (loaded first)
     ├── iso.js             - isometric math (toScreen, toTile, drawTile, drawBox)
     ├── state.js           - central mutable game state object
-    ├── particle.js        - FloatingText, Spark, HypePulse classes
-    ├── machine.js         - MACHINE_DEFS, Machine class
+    ├── particle.js        - FloatingText, Spark classes
+    ├── machine.js         - MACHINE_DEFS, Machine class (click boost per-machine)
     ├── customer.js        - Customer class
     ├── floor.js           - Floor class (tile grid)
     ├── shop.js            - SHOP_ITEMS array, Shop purchase logic
@@ -55,11 +56,11 @@ idle-casino/
     ├── crt.js             - CRT overlay rendering
     ├── ui.js              - HTML shop panel + HUD DOM updates
     ├── input.js           - Unified mouse + keyboard input
-    └── main.js            - init(), gameLoop(), helpers (triggerHype, spawnCustomer, recalcOrigin)
+    └── main.js            - init(), gameLoop(), helpers (applyClickBoost, spawnCustomer, recalcOrigin)
 ```
 
 ### 2.3 Load Order (script tags)
-`iso → state → particle → machine → customer → floor → shop → renderer → crt → ui → input → main`
+`constants → iso → state → particle → machine → customer → floor → shop → renderer → crt → ui → input → main`
 
 All cross-module references that are only needed at runtime (e.g. `spawnCustomer` called from shop item effects) safely resolve because they execute after `main.js` runs.
 
@@ -114,27 +115,25 @@ State = {
 
   machines[],      // array of Machine instances
   customers[],     // array of Customer instances
-  particles[],     // array of FloatingText | Spark | HypePulse
+  particles[],     // array of FloatingText | Spark
 
   floor,           // Floor instance
 
-  hype: {
-    cooldown,        // seconds remaining (counts down to 0)
-    COOLDOWN_MAX,    // 5s base, upgradeable to 3s
-    BOOST_DURATION,  // 3s customer boost duration
-    RADIUS,          // 160px base, upgradeable to 320px
-  },
-
   spinSpeedMult,   // starts at 1.0, multiplied by 0.80 per speed upgrade
+
+  // click boost settings (runtime-upgradeable via shop)
+  clickBoostPerClick,  // bonus added per click (default 0.1, upgraded to 0.2)
+  clickBoostMax,       // max stackable bonus (default 1.0)
+  clickBoostDuration,  // seconds before boost resets on inactivity (default 5, upgraded to 8)
+
+  // auto-clicker NPC (null until purchased)
+  autoClickInterval,   // seconds between auto-clicks (8s)
+  autoClickTimer,      // countdown accumulator
 
   canvas, ctx,
   crtCanvas,
   floorOriginX, floorOriginY,
   tick, lastTime,
-
-  // Hype Man NPC (null until upgrade purchased)
-  hypeManTimer,
-  hypeManInterval,
 }
 ```
 
@@ -182,16 +181,19 @@ Each `Machine` instance has:
 - `col, row` - tile position on the floor
 - `customers[]` - Customer instances currently using this machine
 - `spinInterval` - seconds between spins (modified by speed upgrades)
-- `spinTimer` - countdown to next spin (staggered on spawn via random seed)
+- `spinTimer` - countdown to next spin; decremented at `dt * (1 + clickBoost)` so boost takes effect immediately
 - `shakeTimer, shakeAmount` - drives per-machine shake on big payouts
 - `reelPhase` - running phase accumulator for animated reel light cycling
 - `active` - reserved for future enable/disable mechanic
+- `clickBoost` - current speed bonus (0 to `State.clickBoostMax`); each player click adds `State.clickBoostPerClick`
+- `clickBoostTimer` - seconds until boost resets to 0; refreshed on each click
 
 ### 5.2 Spin Logic
 1. Timer counts down by delta-time each frame
 2. When `spinTimer <= 0`: roll random, walk through spin table cumulative probabilities, return house profit amount
 3. Amount returned to `main.js` which: adds to `State.money`, spawns `FloatingText`, spawns `Spark` burst if `|amount| >= 14`, triggers machine shake if `|amount| >= 14`
-4. `spinTimer` resets to `spinInterval × (0.85 + random × 0.3)` - jitter prevents all machines from spinning simultaneously
+4. `spinTimer` decrements at `dt * (1 + clickBoost)`, so player clicks speed up the current cycle immediately
+5. `spinTimer` resets to `spinInterval × (0.85 + random × 0.3)` - jitter prevents all machines from spinning simultaneously
 
 ### 5.3 Machine Definitions (`MACHINE_DEFS`)
 Each definition contains:
@@ -235,10 +237,9 @@ Each `Customer` instance has:
 - `machine` - reference to assigned Machine
 - `state` - `'moving'` or `'playing'`
 - `color` - cycling from 8-color palette
-- `speed` - 65–90 px/sec base movement
+- `speed` - 65-90 px/sec base movement (fixed; no boost modifier)
 - `size` - 7px radius circle
 - `bob` - per-customer phase offset for idle bobbing animation
-- `boostTimer` - seconds of hype boost remaining
 
 ### 6.2 Lifecycle
 1. Spawned from `spawnCustomer(machine)` in `main.js`
@@ -254,7 +255,6 @@ Each `Customer` instance has:
 - Body circle with `shadowBlur` glow (color-matched)
 - Specular highlight dot (top-left of circle)
 - Idle bob: `sin(tick × 3.5 + customer.bob) × 2px` vertical oscillation
-- Hype boost: increased glow intensity + double-speed movement
 
 ### 6.4 Customer Depth
 `depth = ISO.toTile(x, y, ox, oy).col + row + 0.5`
@@ -290,35 +290,43 @@ Spawned in bursts of 14 on big payouts (`|amount| >= 14`).
 - Color: gold (`#ffd700`) on wins, red on jackpot losses
 - Small filled circles with glow
 
-### 7.3 HypePulse
-Spawned on every hype trigger at the click/key position.
-
-- Expands from 0 to `State.hype.RADIUS` over 0.55 seconds
-- Outer ring: 3px stroke, cyan glow
-- Inner ring: 50% radius, 40% opacity
-- Fades out as it expands
-
-### 7.4 Particle Lifecycle
+### 7.3 Particle Lifecycle
 All particles implement `update(dt)` returning `true` if alive, `false` if expired.
 `State.particles` is filtered every frame: `State.particles = State.particles.filter(p => p.update(dt))`
 
 ---
 
-## 8. Hype the Floor
+## 8. Click Boost
 
 ### 8.1 Mechanic
-- Player clicks anywhere on the game canvas OR presses `H`
-- A `HypePulse` visual radiates from the click point
-- All customers within `State.hype.RADIUS` pixels receive `boostTimer = BOOST_DURATION`
-- Boosted customers move 2.2× faster (they play more spins per unit time due to faster seating)
-- **Cooldown:** 5 seconds base (upgradeable to 3s)
-- Visual indicator: HUD button shows cooldown countdown while on cooldown
+- Player clicks directly on a machine tile on the game canvas
+- Click is converted from screen coords to tile coords via `ISO.toTile`; matched against `State.machines`
+- Each click calls `applyClickBoost(machine)` in `main.js`, which:
+  - Adds `State.clickBoostPerClick` to `machine.clickBoost` (capped at `State.clickBoostMax`)
+  - Resets `machine.clickBoostTimer` to `State.clickBoostDuration`
+- The boost accelerates the machine's spin countdown: `spinTimer -= dt * (1 + clickBoost)`
+- At max boost (+1.0x), machines spin at 2x their base rate
+- **Decay:** after `clickBoostDuration` seconds of no clicks, `clickBoost` resets to 0
+- No global cooldown - each machine tracks its own boost independently
 
-### 8.2 Planned: Hype Man NPC
-- Purchased via shop upgrade
-- An NPC character on the floor who automatically hypes on a timer (every 10 seconds)
-- Auto-hypes from the center of the floor
-- Walks around the floor between hypes (future enhancement)
+### 8.2 Defaults (upgradeable via shop)
+| Property | Default | Upgraded |
+|---|---|---|
+| Boost per click | +0.1x | +0.2x (Power Click) |
+| Max stack | +1.0x (2x speed) | - |
+| Boost duration | 5s | 8s (Extended Boost) |
+
+### 8.3 Visual Feedback
+When `machine.clickBoost > 0`:
+- Pulsing cyan ring around the machine top face; radius scales with boost level
+- `+N%` label drawn above the machine in cyan
+- Customer count badge shifts up to avoid overlap
+- Ring pulse rate is fast (10 Hz) to convey urgency
+
+### 8.4 Auto Clicker NPC
+- Purchased via shop upgrade ($4,500)
+- Every 8 seconds, calls `applyClickBoost` on a random machine
+- Uses the same `applyClickBoost` path as player input - upgrades to boost-per-click and duration apply equally
 
 ---
 
@@ -329,7 +337,7 @@ All particles implement `update(dt)` returning `true` if alive, `false` if expir
 - `UPGRADES` header in neon pink
 - Balance display (gold) + income rate (green/red/grey) beneath header
 - Scrollable item list (thin pink scrollbar)
-- Footer: hotkey legend `[1–9] BUY · [H] HYPE · [↑↓] SCROLL`
+- Footer: hotkey legend `[1-9] BUY · [CLICK] MACHINE · [↑↓] SCROLL`
 
 ### 9.2 Item Rendering
 Each item card shows:
@@ -354,12 +362,12 @@ cost = baseCost × scaleFactor^purchased
 ### 9.4 Current Shop Items
 | # | Name | Base Cost | Scale | Max | Effect |
 |---|---|---|---|---|---|
-| 1 | SLOT MACHINE | $500 | ×1.45 | 8 | Place new slot machine, spawn 1 customer |
-| 2 | FASTER HYPE | $900 | ×99 | 1 | Cooldown 5s → 3s |
-| 3 | SPIN FASTER | $1,100 | ×2.2 | 3 | All machines −20% spin interval (stacks) |
-| 4 | MEGA HYPE | $2,200 | ×99 | 1 | Hype radius ×2 (160px → 320px) |
-| 5 | HYPE MAN NPC | $4,500 | ×99 | 1 | Auto-hype every 10s |
-| 6 | EXPAND FLOOR | $6,000 | ×99 | 1 | 6×6 → 10×10 tiles, re-places machines |
+| 1 | SLOT MACHINE | $500 | x1.45 | 8 | Place new slot machine, spawn 1 customer |
+| 2 | POWER CLICK | $900 | x99 | 1 | Boost per click: +0.1x -> +0.2x |
+| 3 | SPIN FASTER | $1,100 | x2.2 | 3 | All machines -20% spin interval (stacks) |
+| 4 | EXTENDED BOOST | $2,200 | x99 | 1 | Click boost duration: 5s -> 8s |
+| 5 | AUTO CLICKER | $4,500 | x99 | 1 | Clicks a random machine every 8s |
+| 6 | EXPAND FLOOR | $6,000 | x99 | 1 | 6x6 -> 10x10 tiles, re-places machines |
 
 ### 9.5 Shop Visibility
 Items are hidden once `purchased >= maxCount`. The list dynamically rebuilds when item count changes. Affordability classes update every 6 frames without full DOM rebuilds (only inner class changes unless count changed).
@@ -382,16 +390,14 @@ Every action reachable by mouse AND keyboard. Neither is optional.
 ### 10.2 Keyboard Bindings
 | Key | Action |
 |---|---|
-| `H` | Trigger hype from canvas center |
-| `1`–`9` | Purchase shop item at that slot index |
+| `1`-`9` | Purchase shop item at that slot index |
 | `↑` / `↓` | Move shop focus up/down |
 | `Enter` / `Space` | Purchase currently focused shop item |
 
 ### 10.3 Mouse Bindings
 | Event | Action |
 |---|---|
-| Click on game canvas | Trigger hype at click coordinates |
-| Click on HUD hype button | Trigger hype from canvas center |
+| Click on a machine tile | Apply click boost to that machine |
 | Click on shop item card | Purchase that item |
 
 ### 10.4 Shop Focus Navigation
@@ -483,7 +489,7 @@ The CRT canvas has `opacity: 0.35` in CSS (combined with its internal opacity va
 
 - **Early game tension:** Start with $250, first machine costs $500. Player must earn $250 before first purchase. At ~$0.74/s that's ~5–6 minutes.
 - **Scaling:** Each additional slot costs 45% more. 8 machines = $500 + $725 + $1051 + ... - gets very expensive. Later machines must be cheaper per income unit or player hits a wall.
-- **Hype value:** At 5s cooldown with 160px radius, boosting 1 customer for 3s adds maybe 1–2 extra spins per hype cycle. Roughly +$2 per hype at base stats. Not huge - the upgrade that makes hype matter more is `SPIN FASTER`.
+- **Click boost value:** At base stats (+0.1x per click, 5s window), spamming a machine to max (+1.0x) doubles its spin rate for 5s. On a base-speed machine (~$0.74/s), that's roughly +$0.74 in extra income per 5s window - a meaningful but not game-breaking reward for active play. Power Click doubles the per-click increment, making max stack reachable in 5 clicks instead of 10.
 - **Math rule:** The spin table for every machine tier must produce positive expected value for the house. It is acceptable (and desirable) for the short-term rolling average to go negative sometimes. The 5-second IPS display will show red during downswings. This is intentional visual chaos.
 
 ---
@@ -518,4 +524,4 @@ Customers move in screen pixel space, not tile space. Depth calculated by conver
 
 ---
 
-*Last updated: Milestone 1 - isometric floor, single slot machine, one customer, floating income text, shop panel, hype mechanic, CRT overlay.*
+*Last updated: Milestone 2 - replaced Hype the Floor with per-machine click boost. Active clicking now speeds up individual machines up to 2x. Three new shop upgrades: Power Click, Extended Boost, Auto Clicker NPC.*

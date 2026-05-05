@@ -22,20 +22,20 @@ const SHOP_ITEMS = [
     },
   },
   {
-    id:          'hype_cooldown',
-    name:        'FASTER HYPE',
-    desc:        'Cut hype cooldown\nfrom 5s → 3s.',
+    id:          'power_click',
+    name:        'POWER CLICK',
+    desc:        'Double boost per click.\n+0.1x speed -> +0.2x speed.',
     baseCost:    900,
     scaleFactor: 99,
     maxCount:    1,
     purchased:   0,
     canBuy() { return true; },
-    onBuy() { State.hype.COOLDOWN_MAX = 3; return true; },
+    onBuy() { State.clickBoostPerClick = CLICK_BOOST_PER_CLICK_UPGRADED; return true; },
   },
   {
     id:          'spin_speed',
     name:        'SPIN FASTER',
-    desc:        'All machines spin\n20% faster. Stacks 3×.',
+    desc:        'All machines spin\n20% faster. Stacks 3x.',
     baseCost:    1100,
     scaleFactor: 2.2,
     maxCount:    3,
@@ -48,47 +48,48 @@ const SHOP_ITEMS = [
     },
   },
   {
-    id:          'hype_radius',
-    name:        'MEGA HYPE',
-    desc:        'Double the hype\npulse radius.',
+    id:          'extended_boost',
+    name:        'EXTENDED BOOST',
+    desc:        'Click boost lasts\n5s -> 8s before fading.',
     baseCost:    2200,
     scaleFactor: 99,
     maxCount:    1,
     purchased:   0,
     canBuy() { return true; },
-    onBuy() { State.hype.RADIUS *= 2; return true; },
+    onBuy() { State.clickBoostDuration = CLICK_BOOST_DURATION_UPGRADED; return true; },
   },
   {
-    id:          'hype_man',
-    name:        'HYPE MAN NPC',
-    desc:        'Auto-hypes the floor\nevery 10 seconds.',
+    id:          'auto_click',
+    name:        'AUTO CLICKER',
+    desc:        'Phantom hands click a\nrandom machine every 8s.',
     baseCost:    4500,
     scaleFactor: 99,
     maxCount:    1,
     purchased:   0,
     canBuy() { return true; },
-    onBuy() { State.hypeManTimer = 0; State.hypeManInterval = 10; return true; },
+    onBuy() {
+      State.autoClickInterval = AUTO_CLICK_INTERVAL;
+      State.autoClickTimer    = 0;
+      return true;
+    },
   },
   {
     id:          'expand_floor',
     name:        'EXPAND FLOOR',
-    desc:        'Grow casino from\n6×6 → 10×10 tiles.',
+    desc:        'Grow casino from\n6x6 -> 10x10 tiles.',
     baseCost:    6000,
     scaleFactor: 99,
     maxCount:    1,
     purchased:   0,
     canBuy() { return true; },
     onBuy() {
-      const oldFloor = State.floor;
       State.floor = new Floor(10, 10);
-      // Re-register machines in new floor
       State.machines.forEach(m => {
         const tile = State.floor.findFreeTile();
         if (tile) {
           m.col = tile.col;
           m.row = tile.row;
           State.floor.setOccupied(tile.col, tile.row, true);
-          // Update customer target positions
           State.customers.forEach(c => {
             if (c.machine === m) c.assignMachine(m);
           });

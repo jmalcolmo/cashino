@@ -1,4 +1,4 @@
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function recalcOrigin() {
   if (!State.canvas || !State.floor) return;
@@ -10,7 +10,6 @@ function recalcOrigin() {
 }
 
 function spawnCustomer(machine) {
-  // Customers enter from the bottom point of the floor
   const ox = State.floorOriginX;
   const oy = State.floorOriginY;
   const bY = oy + (State.floor.cols + State.floor.rows) * ISO.TILE_H / 2 + 28;
@@ -19,22 +18,13 @@ function spawnCustomer(machine) {
   State.customers.push(c);
 }
 
-function triggerHype(x, y) {
-  if (State.hype.cooldown > 0) return;
-  State.hype.cooldown = State.hype.COOLDOWN_MAX;
-
-  State.particles.push(new HypePulse(x, y, State.hype.RADIUS));
-
-  // Boost all customers within radius
-  State.customers.forEach(c => {
-    const dist = Math.hypot(c.x - x, c.y - y);
-    if (dist <= State.hype.RADIUS) {
-      c.boostTimer = State.hype.BOOST_DURATION;
-    }
-  });
+// Apply click boost to a machine. Called from input click and auto-clicker.
+function applyClickBoost(machine) {
+  machine.clickBoost      = Math.min(machine.clickBoost + State.clickBoostPerClick, State.clickBoostMax);
+  machine.clickBoostTimer = State.clickBoostDuration;
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────────────────────
 
 function init() {
   const canvas    = document.getElementById('game-canvas');
@@ -57,7 +47,6 @@ function init() {
   window.addEventListener('resize', resize);
   resize();
 
-  // Floor
   State.floor = new Floor(6, 6);
   recalcOrigin();
 
@@ -67,11 +56,6 @@ function init() {
   State.floor.setOccupied(2, 2, true);
   spawnCustomer(starter);
 
-  // Hype Man state placeholder
-  State.hypeManTimer    = null;
-  State.hypeManInterval = null;
-
-  // Init subsystems
   UI.init();
   Input.init();
 
@@ -79,21 +63,20 @@ function init() {
   requestAnimationFrame(loop);
 }
 
-// ── Income rolling window ──────────────────────────────────────────────────
+// ── Income rolling window ─────────────────────────────────────────────────────
 
 const _incomeWindow = [];
 
 function recordIncome(amount) {
   _incomeWindow.push({ t: State.tick, v: amount });
-  // Keep last 5 seconds
   const cutoff = State.tick - 5;
   while (_incomeWindow.length && _incomeWindow[0].t < cutoff) _incomeWindow.shift();
-  const sum      = _incomeWindow.reduce((s, e) => s + e.v, 0);
-  const window   = Math.min(State.tick, 5);
+  const sum    = _incomeWindow.reduce((s, e) => s + e.v, 0);
+  const window = Math.min(State.tick, 5);
   State.incomePerSecond = window > 0 ? sum / window : 0;
 }
 
-// ── Game loop ──────────────────────────────────────────────────────────────
+// ── Game loop ─────────────────────────────────────────────────────────────────
 
 let _uiFrameCounter = 0;
 
@@ -102,17 +85,15 @@ function loop(now) {
   State.lastTime = now;
   State.tick    += dt;
 
-  // Hype cooldown
-  if (State.hype.cooldown > 0) {
-    State.hype.cooldown = Math.max(0, State.hype.cooldown - dt);
-  }
-
-  // Hype Man auto-hype
-  if (State.hypeManInterval !== null) {
-    State.hypeManTimer += dt;
-    if (State.hypeManTimer >= State.hypeManInterval) {
-      State.hypeManTimer = 0;
-      triggerHype(State.floorOriginX, State.floorOriginY + 60);
+  // Auto-clicker NPC
+  if (State.autoClickInterval !== null) {
+    State.autoClickTimer += dt;
+    if (State.autoClickTimer >= State.autoClickInterval) {
+      State.autoClickTimer = 0;
+      if (State.machines.length > 0) {
+        const m = State.machines[Math.floor(Math.random() * State.machines.length)];
+        applyClickBoost(m);
+      }
     }
   }
 
@@ -125,7 +106,6 @@ function loop(now) {
     if (State.money < 0) State.money = 0;
     recordIncome(spin);
 
-    // Floating text at machine position
     const sp    = m.screenPos;
     const posX  = sp.x + (Math.random() - 0.5) * 28;
     const posY  = sp.y - m.def.boxH - 4;
@@ -133,7 +113,6 @@ function loop(now) {
     const label = (spin >= 0 ? '+' : '') + '$' + Math.abs(spin).toFixed(0);
     State.particles.push(new FloatingText(posX, posY, label, color));
 
-    // Sparks on big events
     if (Math.abs(spin) >= 14) {
       const sparkColor = spin < 0 ? '#ff3333' : '#ffd700';
       for (let i = 0; i < 14; i++) {
@@ -152,12 +131,11 @@ function loop(now) {
   Renderer.render();
   CRT.render();
 
-  // Update HTML UI every ~6 frames (~10×/sec) to avoid DOM thrash
   _uiFrameCounter++;
   if (_uiFrameCounter % 6 === 0) UI.render();
 
   requestAnimationFrame(loop);
 }
 
-// ── Boot ───────────────────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', init);

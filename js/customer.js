@@ -18,23 +18,18 @@ class Customer {
     this.speed   = 65 + Math.random() * 25;
     this.size    = 7;
     this.bob     = Math.random() * Math.PI * 2;
-    this.boostTimer = 0;
   }
 
   assignMachine(machine) {
     this.machine = machine;
     machine.customers.push(this);
     const sp = machine.screenPos;
-    // Stand just in front of (below) the machine in iso space
     this.tx = sp.x + (Math.random() - 0.5) * 12;
     this.ty = sp.y + ISO.TILE_H * 0.75;
     this.state = 'moving';
   }
 
   update(dt) {
-    if (this.boostTimer > 0) this.boostTimer -= dt;
-    const spd = this.speed * (this.boostTimer > 0 ? 2.2 : 1);
-
     if (this.state === 'moving') {
       const dx   = this.tx - this.x;
       const dy   = this.ty - this.y;
@@ -44,8 +39,8 @@ class Customer {
         this.y = this.ty;
         this.state = 'playing';
       } else {
-        this.x += (dx / dist) * spd * dt;
-        this.y += (dy / dist) * spd * dt;
+        this.x += (dx / dist) * this.speed * dt;
+        this.y += (dy / dist) * this.speed * dt;
       }
     }
   }
@@ -64,16 +59,10 @@ class Customer {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Body glow when boosted
-    if (this.boostTimer > 0) {
-      ctx.shadowColor = '#00d4ff';
-      ctx.shadowBlur  = 14;
-    }
-
     // Body circle
-    ctx.fillStyle = this.color;
+    ctx.fillStyle   = this.color;
     ctx.shadowColor = this.color;
-    ctx.shadowBlur  = this.boostTimer > 0 ? 14 : 5;
+    ctx.shadowBlur  = 5;
     ctx.beginPath();
     ctx.arc(this.x, cy, this.size, 0, Math.PI * 2);
     ctx.fill();
@@ -88,9 +77,8 @@ class Customer {
     ctx.restore();
   }
 
-  // Depth key for sort (approximate tile position)
   get depth() {
     const tile = ISO.toTile(this.x, this.y, State.floorOriginX, State.floorOriginY);
-    return tile.col + tile.row + 0.5; // +0.5 renders in front of machines on same diagonal
+    return tile.col + tile.row + 0.5;
   }
 }

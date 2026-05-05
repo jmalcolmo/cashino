@@ -5,7 +5,6 @@ const Renderer = {
     const W   = State.canvas.width;
     const H   = State.canvas.height;
 
-    // Background
     ctx.fillStyle = '#03010a';
     ctx.fillRect(0, 0, W, H);
 
@@ -31,7 +30,6 @@ const Renderer = {
       }
     }
 
-    // Entrance arrow at bottom-most point of floor
     const bx = ox;
     const by = oy + (floor.cols + floor.rows) * ISO.TILE_H / 2;
     this._drawEntrance(ctx, bx, by);
@@ -44,7 +42,6 @@ const Renderer = {
     ctx.shadowColor  = '#39ff14';
     ctx.shadowBlur   = 10;
     ctx.lineWidth    = 2;
-    // Two small chevrons pointing up into the floor
     for (let i = 0; i < 2; i++) {
       const offset = i * 14;
       ctx.beginPath();
@@ -57,12 +54,9 @@ const Renderer = {
   },
 
   _drawEntities(ctx) {
-    // Collect all entities, sort by iso depth so nearer items draw last (in front)
     const entities = [];
-
-    State.machines.forEach(m  => entities.push({ depth: m.depth,    draw: () => this._drawMachine(ctx, m)  }));
-    State.customers.forEach(c => entities.push({ depth: c.depth,    draw: () => c.draw(ctx, State.tick)    }));
-
+    State.machines.forEach(m  => entities.push({ depth: m.depth, draw: () => this._drawMachine(ctx, m)  }));
+    State.customers.forEach(c => entities.push({ depth: c.depth, draw: () => c.draw(ctx, State.tick) }));
     entities.sort((a, b) => a.depth - b.depth);
     entities.forEach(e => e.draw());
   },
@@ -71,7 +65,6 @@ const Renderer = {
     const def  = m.def;
     let { x, y } = m.screenPos;
 
-    // Shake on big payout
     if (m.shakeTimer > 0) {
       x += (Math.random() - 0.5) * m.shakeAmount * 2;
       y += (Math.random() - 0.5) * m.shakeAmount;
@@ -79,14 +72,13 @@ const Renderer = {
 
     ISO.drawBox(ctx, x, y, def.boxH, def.colors);
 
-    // ── Neon accent stripe across top face ──────────────────
     ctx.save();
     const hw = ISO.TILE_W / 2;
     const hh = ISO.TILE_H / 2;
     const bH = def.boxH;
 
     // Reel "screen" - animated stripe on front-left face
-    const reelAlpha = 0.55 + 0.35 * Math.sin(m.reelPhase);
+    const reelAlpha  = 0.55 + 0.35 * Math.sin(m.reelPhase);
     const reelColors = ['#ff0090','#00d4ff','#ffd700','#39ff14','#9b30ff'];
     const reelColor  = reelColors[Math.floor(m.reelPhase / 1.2) % reelColors.length];
 
@@ -94,7 +86,6 @@ const Renderer = {
     ctx.fillStyle   = reelColor;
     ctx.shadowColor = reelColor;
     ctx.shadowBlur  = 12;
-    // Small diamond on top face to represent a screen/light
     ctx.beginPath();
     ctx.arc(x, y - bH + hh * 0.7, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -116,15 +107,42 @@ const Renderer = {
 
     ctx.restore();
 
-    // ── Customer count badge ─────────────────────────────────
+    // Click boost indicator
+    if (m.clickBoost > 0) {
+      ctx.save();
+      // Pulsing ring around the machine top, intensity scales with boost level
+      const boostPulse = 0.55 + 0.45 * Math.sin(State.tick * 10 + m.reelPhase);
+      ctx.globalAlpha  = boostPulse * Math.min(m.clickBoost + 0.3, 1);
+      ctx.strokeStyle  = '#00d4ff';
+      ctx.shadowColor  = '#00d4ff';
+      ctx.shadowBlur   = 18;
+      ctx.lineWidth    = 2;
+      ctx.beginPath();
+      ctx.arc(x, y - bH * 0.55, 16 + m.clickBoost * 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Boost percentage label above the machine
+      ctx.globalAlpha = 0.92;
+      ctx.shadowBlur  = 8;
+      ctx.font        = '6px "Press Start 2P"';
+      ctx.fillStyle   = '#00d4ff';
+      ctx.shadowColor = '#00d4ff';
+      ctx.textAlign   = 'center';
+      const pct = Math.round(m.clickBoost * 100);
+      ctx.fillText(`+${pct}%`, x, y - bH - 14);
+      ctx.restore();
+    }
+
+    // Customer count badge
     if (m.customers.length > 0) {
       ctx.save();
-      ctx.font        = '6px Press Start 2P';
+      ctx.font        = '6px "Press Start 2P"';
       ctx.fillStyle   = '#fff';
       ctx.shadowColor = def.accentColor;
       ctx.shadowBlur  = 6;
       ctx.textAlign   = 'center';
-      ctx.fillText(`×${m.customers.length}`, x, y - bH - 6);
+      const labelY = m.clickBoost > 0 ? y - bH - 24 : y - bH - 6;
+      ctx.fillText(`x${m.customers.length}`, x, labelY);
       ctx.restore();
     }
   },

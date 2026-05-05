@@ -5,6 +5,28 @@ The top entry is always the most recent push. Entries are added before every com
 
 ---
 
+## [0.2.0] 2026-05-04 - Replace Hype mechanic with machine click boost
+
+### Changed
+- Removed Hype the Floor entirely: no hype button, no H key, no HypePulse particle, no hype cooldown, no radius, no customer speed boost
+- Canvas clicks now detect which machine tile was clicked and apply a speed boost to that machine
+- Each click adds +0.1x to the machine's spin countdown speed (stacks up to +1.0x, max 2x total speed)
+- Boost timer resets to 5s on each click; machine returns to base speed after 5s of no clicks
+- Boosted machines show a pulsing cyan ring and a "+N%" label above them
+
+### Replaced shop upgrades
+- FASTER HYPE -> POWER CLICK ($900): doubles boost per click from +0.1x to +0.2x
+- MEGA HYPE -> EXTENDED BOOST ($2,200): extends boost duration from 5s to 8s
+- HYPE MAN NPC -> AUTO CLICKER ($4,500): phantom clicks a random machine every 8s
+
+### Architecture
+- `applyClickBoost(machine)` in main.js is the single entry point for both player clicks and the auto-clicker
+- `State.clickBoostPerClick`, `State.clickBoostMax`, `State.clickBoostDuration` are runtime-upgradeable
+- `constants.js` now loaded first in index.html (was missing from script tags)
+- Removed `HypePulse` class from particle.js, `boostTimer` from Customer, hype state from State
+
+---
+
 ## [0.1.0] 2026-05-04 - Initial commit
 
 ### Added

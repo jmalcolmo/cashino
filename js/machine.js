@@ -32,22 +32,37 @@ class Machine {
     this.col  = col;
     this.row  = row;
 
-    this.customers     = [];
-    this.spinInterval  = this.def.baseSpinInterval * State.spinSpeedMult;
-    this.spinTimer     = Math.random() * this.spinInterval;
-    this.shakeTimer    = 0;
-    this.shakeAmount   = 0;
-    this.reelPhase     = Math.random() * Math.PI * 2; // for animated reel strip
-    this.active        = true;
+    this.customers      = [];
+    this.spinInterval   = this.def.baseSpinInterval * State.spinSpeedMult;
+    this.spinTimer      = Math.random() * this.spinInterval;
+    this.shakeTimer     = 0;
+    this.shakeAmount    = 0;
+    this.reelPhase      = Math.random() * Math.PI * 2;
+    this.active         = true;
+
+    // Click boost: each click adds speed. Timer resets on each click; expires = no boost.
+    this.clickBoost      = 0;
+    this.clickBoostTimer = 0;
   }
 
   // Returns house profit amount (positive = earn, negative = pay out), or null if no spin.
   update(dt) {
     if (this.customers.length === 0) return null;
 
-    this.reelPhase  += dt * 6;
-    this.spinTimer  -= dt;
+    // Decay boost timer; reset boost when it expires
+    if (this.clickBoostTimer > 0) {
+      this.clickBoostTimer -= dt;
+      if (this.clickBoostTimer <= 0) {
+        this.clickBoostTimer = 0;
+        this.clickBoost      = 0;
+      }
+    }
+
+    this.reelPhase += dt * 6;
     if (this.shakeTimer > 0) this.shakeTimer -= dt;
+
+    // Click boost accelerates the spin countdown directly
+    this.spinTimer -= dt * (1 + this.clickBoost);
 
     if (this.spinTimer <= 0) {
       this.spinTimer = this.spinInterval * (0.85 + Math.random() * 0.3);
@@ -77,7 +92,6 @@ class Machine {
     return ISO.toScreen(this.col, this.row, State.floorOriginX, State.floorOriginY);
   }
 
-  // Sort depth key
   get depth() {
     return this.col + this.row;
   }

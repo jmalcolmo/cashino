@@ -4,9 +4,6 @@ const UI = {
   _focusIndex: 0,
 
   init() {
-    document.getElementById('hype-btn').addEventListener('click', () => {
-      triggerHype(State.canvas.width / 2, State.canvas.height / 2);
-    });
     this.render();
   },
 
@@ -19,15 +16,6 @@ const UI = {
     const money = Math.floor(State.money);
     document.getElementById('balance-display').textContent =
       '$' + money.toLocaleString();
-
-    const btn = document.getElementById('hype-btn');
-    if (State.hype.cooldown > 0) {
-      btn.className   = 'hype-cooldown';
-      btn.textContent = `[H] ${State.hype.cooldown.toFixed(1)}s`;
-    } else {
-      btn.className   = 'hype-ready';
-      btn.innerHTML   = '<span class="key-hint">[H]</span> HYPE THE FLOOR';
-    }
   },
 
   _updateShop() {
@@ -43,21 +31,18 @@ const UI = {
     const items = Shop.visibleItems();
     const list  = document.getElementById('shop-items-list');
 
-    // Clamp focus index
     this._focusIndex = Math.max(0, Math.min(this._focusIndex, items.length - 1));
 
-    // Only rebuild DOM if item count changed (avoid flicker on every frame)
     if (list.children.length !== items.length) {
       this._buildShopDOM(items);
     } else {
-      // Update affordability classes only
       items.forEach((item, i) => {
         const el = list.children[i];
         if (!el) return;
         const affordable = Shop.canAfford(item);
         el.className = 'shop-item' +
-          (affordable                     ? ' affordable'  : ' unaffordable') +
-          (i === this._focusIndex         ? ' focused'     : '');
+          (affordable             ? ' affordable'  : ' unaffordable') +
+          (i === this._focusIndex ? ' focused'     : '');
         el.querySelector('.item-cost').textContent =
           '$' + Shop.cost(item).toLocaleString();
       });
@@ -97,10 +82,8 @@ const UI = {
     const item = items[index];
     if (!Shop.purchase(item)) return;
 
-    // Rebuild shop DOM after purchase (counts/costs change)
     this._buildShopDOM(Shop.visibleItems());
 
-    // Flash the item
     const el = document.getElementById('shop-items-list').children[index];
     if (el) {
       el.classList.add('just-bought');
@@ -112,7 +95,6 @@ const UI = {
   moveFocus(delta) {
     const items = Shop.visibleItems();
     this._focusIndex = (this._focusIndex + delta + items.length) % items.length;
-    // Scroll focused item into view
     const el = document.getElementById('shop-items-list').children[this._focusIndex];
     if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     this._updateShop();

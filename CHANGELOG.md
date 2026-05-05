@@ -5,6 +5,26 @@ The top entry is always the most recent push. Entries are added before every com
 
 ---
 
+## [0.3.0] 2026-05-04 - HUD earnings history, splitscreen upgrade, economy rebalance
+
+### Added
+- HUD earnings history panel below the balance: three rows showing previous vs current window totals for 1 minute, 5 minutes, and 1 hour
+  - Left value = previous complete window; shows "--" until enough time has elapsed
+  - Right value = current rolling window; updates every 6 frames
+  - Values turn red if net earnings are negative for that window
+- SPLITSCREEN upgrade ($15,000): each slot machine seats 2 customers at once; spin income multiplied by customer count, effectively doubling per-machine output
+- `spawnCustomersForMachine(m)` helper in main.js - respects splitscreen state when placing new machines
+- `earningsInWindow(t0, t1)` helper in main.js - sums net earnings over any time range from the rolling history buffer (up to 2 hours retained)
+
+### Changed
+- Balance display font size doubled: 15px -> 30px
+- Starting money: $250 -> $150
+- First slot machine cost: $500 -> $200 (second machine ~$290, scaling unchanged at x1.45)
+- Multi-customer positioning: first customer sits slightly left, second slightly right of machine center (index-based offset replacing pure random)
+- Machine spin result is now multiplied by `customers.length`, so splitscreen truly doubles per-spin income (and loss variance)
+
+---
+
 ## [0.2.1] 2026-05-04 - Show effective speed multiplier above each machine
 
 ### Changed

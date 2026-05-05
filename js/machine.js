@@ -66,7 +66,7 @@ class Machine {
 
     if (this.spinTimer <= 0) {
       this.spinTimer = this.spinInterval * (0.85 + Math.random() * 0.3);
-      return this._spin();
+      return this._spin() * this.customers.length;
     }
     return null;
   }

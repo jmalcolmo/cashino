@@ -16,6 +16,26 @@ const UI = {
     const money = Math.floor(State.money);
     document.getElementById('balance-display').textContent =
       '$' + money.toLocaleString();
+
+    const t = State.tick;
+
+    const setVal = (id, val, avail) => {
+      const el = document.getElementById(id);
+      if (!avail) {
+        el.textContent = '--';
+        el.className   = 'earn-val earn-unknown';
+      } else {
+        el.textContent = '$' + Math.floor(Math.abs(val)).toLocaleString();
+        el.className   = 'earn-val ' + (val >= 0 ? 'earn-pos' : 'earn-neg');
+      }
+    };
+
+    setVal('earn-prev-1m', earningsInWindow(t - 120, t - 60),   t >= 120);
+    setVal('earn-curr-1m', earningsInWindow(t - 60,  t),        t >= 1);
+    setVal('earn-prev-5m', earningsInWindow(t - 600, t - 300),  t >= 600);
+    setVal('earn-curr-5m', earningsInWindow(t - 300, t),        t >= 1);
+    setVal('earn-prev-1h', earningsInWindow(t - 7200, t - 3600), t >= 7200);
+    setVal('earn-curr-1h', earningsInWindow(t - 3600, t),       t >= 1);
   },
 
   _updateShop() {

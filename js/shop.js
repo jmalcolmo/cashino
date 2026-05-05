@@ -6,7 +6,7 @@ const SHOP_ITEMS = [
     id:          'slot_machine',
     name:        'SLOT MACHINE',
     desc:        'Place another slot machine.\nEach one brings in a customer.',
-    baseCost:    500,
+    baseCost:    SHOP_SLOT_MACHINE_COST,
     scaleFactor: 1.45,
     maxCount:    8,
     purchased:   0,
@@ -17,7 +17,7 @@ const SHOP_ITEMS = [
       const m = new Machine('SLOT', tile.col, tile.row);
       State.machines.push(m);
       State.floor.setOccupied(tile.col, tile.row, true);
-      spawnCustomer(m);
+      spawnCustomersForMachine(m);
       return true;
     },
   },
@@ -77,7 +77,7 @@ const SHOP_ITEMS = [
     id:          'expand_floor',
     name:        'EXPAND FLOOR',
     desc:        'Grow casino from\n6x6 -> 10x10 tiles.',
-    baseCost:    6000,
+    baseCost:    SHOP_EXPAND_FLOOR_COST,
     scaleFactor: 99,
     maxCount:    1,
     purchased:   0,
@@ -96,6 +96,21 @@ const SHOP_ITEMS = [
         }
       });
       recalcOrigin();
+      return true;
+    },
+  },
+  {
+    id:          'splitscreen',
+    name:        'SPLITSCREEN',
+    desc:        'Each slot machine seats\n2 customers at once.\nDoubles income per spin.',
+    baseCost:    SHOP_SPLITSCREEN_COST,
+    scaleFactor: 99,
+    maxCount:    1,
+    purchased:   0,
+    canBuy() { return true; },
+    onBuy() {
+      State.splitscreen = true;
+      State.machines.forEach(m => spawnCustomer(m));
       return true;
     },
   },

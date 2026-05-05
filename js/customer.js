@@ -21,10 +21,12 @@ class Customer {
   }
 
   assignMachine(machine) {
+    const idx    = machine.customers.length; // 0 = first seat, 1 = second seat
     this.machine = machine;
     machine.customers.push(this);
-    const sp = machine.screenPos;
-    this.tx = sp.x + (Math.random() - 0.5) * 12;
+    const sp     = machine.screenPos;
+    const offsetX = (idx - 0.5) * 14 + (Math.random() - 0.5) * 4;
+    this.tx = sp.x + offsetX;
     this.ty = sp.y + ISO.TILE_H * 0.75;
     this.state = 'moving';
   }

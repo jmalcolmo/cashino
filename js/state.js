@@ -1,5 +1,5 @@
 const State = {
-  money:            250,
+  money:            STARTING_MONEY,
   totalEarned:      0,
   incomePerSecond:  0,
 
@@ -7,6 +7,8 @@ const State = {
   customers: [],
   particles: [],
   floor:     null,
+
+  splitscreen: false,
 
   // spin speed multiplier, upgraded via shop
   spinSpeedMult: 1.0,

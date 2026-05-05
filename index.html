@@ -13,7 +13,29 @@
 
     <div id="floor-section">
       <div id="hud">
-        <span id="balance-display">$0</span>
+        <div id="hud-left">
+          <span id="balance-display">$0</span>
+          <div id="hud-earnings">
+            <div class="earn-row">
+              <span class="earn-label">1M</span>
+              <span class="earn-val" id="earn-prev-1m">--</span>
+              <span class="earn-sep">|</span>
+              <span class="earn-val" id="earn-curr-1m">$0</span>
+            </div>
+            <div class="earn-row">
+              <span class="earn-label">5M</span>
+              <span class="earn-val" id="earn-prev-5m">--</span>
+              <span class="earn-sep">|</span>
+              <span class="earn-val" id="earn-curr-5m">$0</span>
+            </div>
+            <div class="earn-row">
+              <span class="earn-label">1H</span>
+              <span class="earn-val" id="earn-prev-1h">--</span>
+              <span class="earn-sep">|</span>
+              <span class="earn-val" id="earn-curr-1h">$0</span>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="canvas-wrap">
         <canvas id="game-canvas"></canvas>

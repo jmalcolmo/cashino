@@ -1,5 +1,10 @@
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+function spawnCustomersForMachine(m) {
+  spawnCustomer(m);
+  if (State.splitscreen) spawnCustomer(m);
+}
+
 function recalcOrigin() {
   if (!State.canvas || !State.floor) return;
   const W = State.canvas.width;
@@ -54,7 +59,7 @@ function init() {
   const starter = new Machine('SLOT', 2, 2);
   State.machines.push(starter);
   State.floor.setOccupied(2, 2, true);
-  spawnCustomer(starter);
+  spawnCustomersForMachine(starter);
 
   UI.init();
   Input.init();
@@ -65,15 +70,26 @@ function init() {
 
 // ── Income rolling window ─────────────────────────────────────────────────────
 
-const _incomeWindow = [];
+const _incomeWindow   = [];
+const _earningsHistory = [];
 
 function recordIncome(amount) {
-  _incomeWindow.push({ t: State.tick, v: amount });
+  const entry = { t: State.tick, v: amount };
+
+  _incomeWindow.push(entry);
   const cutoff = State.tick - 5;
   while (_incomeWindow.length && _incomeWindow[0].t < cutoff) _incomeWindow.shift();
   const sum    = _incomeWindow.reduce((s, e) => s + e.v, 0);
   const window = Math.min(State.tick, 5);
   State.incomePerSecond = window > 0 ? sum / window : 0;
+
+  _earningsHistory.push(entry);
+  const histCutoff = State.tick - 7200;
+  while (_earningsHistory.length && _earningsHistory[0].t < histCutoff) _earningsHistory.shift();
+}
+
+function earningsInWindow(t0, t1) {
+  return _earningsHistory.reduce((s, e) => (e.t >= t0 && e.t < t1 ? s + e.v : s), 0);
 }
 
 // ── Game loop ─────────────────────────────────────────────────────────────────

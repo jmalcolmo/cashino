@@ -3,7 +3,7 @@ const TILE_W = 96;
 const TILE_H = 48;
 
 // ─── Economy ─────────────────────────────────────────────────────────────────
-const STARTING_MONEY = 250;
+const STARTING_MONEY = 150;
 
 // Slot machine base spin table
 const SPIN_SMALL_WIN_CHANCE   = 0.55;
@@ -63,7 +63,7 @@ const SPARK_LIFE_MAX      = 0.9;
 const SPARK_BIG_THRESH    = 14;    // |amount| >= this -> spawn spark burst
 
 // ─── Shop / Upgrades ─────────────────────────────────────────────────────────
-const SHOP_SLOT_MACHINE_COST  =   500;
+const SHOP_SLOT_MACHINE_COST  =   200;
 const SHOP_SLOT_MACHINE_SCALE = 1.45;
 const SHOP_SLOT_MACHINE_MAX   =     8;
 
@@ -74,6 +74,7 @@ const SHOP_SPIN_FASTER_MAX      =     3;
 const SHOP_EXTENDED_BOOST_COST  =  2200;
 const SHOP_AUTO_CLICK_COST      =  4500;
 const SHOP_EXPAND_FLOOR_COST    =  6000;
+const SHOP_SPLITSCREEN_COST     = 15000;
 const SHOP_ONE_TIME_SCALE       =    99; // effectively prevents repurchase
 
 // ─── Floor ───────────────────────────────────────────────────────────────────

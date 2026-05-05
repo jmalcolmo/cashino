@@ -52,22 +52,58 @@ html, body {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 18px;
   padding: 10px 14px;
   background: linear-gradient(to bottom, rgba(4,1,10,0.92) 60%, transparent);
   pointer-events: none;
 }
 
+#hud-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 #balance-display {
-  font-size: 15px;
+  font-size: 30px;
   color: var(--gold);
   text-shadow: 0 0 8px var(--gold), 0 0 24px #ff9900aa;
   pointer-events: none;
+  line-height: 1;
 }
+
+#hud-earnings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.earn-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 6px;
+}
+
+.earn-label {
+  color: #445;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.earn-sep {
+  color: #334;
+}
+
+.earn-val {
+  color: var(--gold);
+  min-width: 36px;
+  text-align: right;
+}
+
+.earn-val.earn-pos { color: var(--gold); }
+.earn-val.earn-neg { color: var(--red); }
+.earn-val.earn-unknown { color: #445; }
 
 /* ── Canvas wrap ─────────────────────────────────────── */
 

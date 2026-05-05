@@ -109,9 +109,10 @@ Origin re-calculated on window resize and after floor expansion.
 
 ```javascript
 State = {
-  money,           // current player balance (float)
+  money,           // current player balance (float); starts at STARTING_MONEY
   totalEarned,     // lifetime earnings (for stats/achievements later)
   incomePerSecond, // rolling 5-second average
+  splitscreen,     // bool; true after Splitscreen upgrade - machines seat 2 customers
 
   machines[],      // array of Machine instances
   customers[],     // array of Customer instances
@@ -160,16 +161,28 @@ The house always wins in aggregate. Individual spins can and do go negative (cus
 **Net income per machine (base):** ~$0.74/sec
 
 ### 4.3 Starting Economy
-- Starting money: **$250**
-- First purchasable slot machine: **$500**
-- Player must earn ~$250 before first upgrade - creates early engagement loop
-- Second machine at $500 × 1.45¹ = **$725**, etc.
+- Starting money: **$150**
+- First purchasable slot machine: **$200**
+- Player must earn ~$50 before first upgrade - quick early hook, then cost scales fast
+- Second machine at $200 × 1.45¹ = **$290**, third at ~$420, etc.
 
 ### 4.4 Income Rolling Average
 ```
 State.incomePerSecond = (sum of all spin amounts in last 5s) / min(tick, 5)
 ```
 Shown in shop panel as `▲ $X.XX/s` (green) or `▼ $X.XX/s` (red).
+
+### 4.5 HUD Earnings History
+`_earningsHistory` in main.js stores every spin result with its timestamp, pruned to the last 2 hours (7200s). `earningsInWindow(t0, t1)` sums net earnings over any slice.
+
+Three rows displayed in the HUD below the balance:
+| Row | Left (previous window) | Right (current window) |
+|---|---|---|
+| 1M | sum from t-120 to t-60 | sum from t-60 to now |
+| 5M | sum from t-600 to t-300 | sum from t-300 to now |
+| 1H | sum from t-7200 to t-3600 | sum from t-3600 to now |
+
+Shows "--" until enough time has elapsed for a complete previous window.
 
 ---
 
@@ -362,12 +375,13 @@ cost = baseCost × scaleFactor^purchased
 ### 9.4 Current Shop Items
 | # | Name | Base Cost | Scale | Max | Effect |
 |---|---|---|---|---|---|
-| 1 | SLOT MACHINE | $500 | x1.45 | 8 | Place new slot machine, spawn 1 customer |
+| 1 | SLOT MACHINE | $200 | x1.45 | 8 | Place new slot machine, spawn 1 customer (or 2 if Splitscreen active) |
 | 2 | POWER CLICK | $900 | x99 | 1 | Boost per click: +0.1x -> +0.2x |
 | 3 | SPIN FASTER | $1,100 | x2.2 | 3 | All machines -20% spin interval (stacks) |
 | 4 | EXTENDED BOOST | $2,200 | x99 | 1 | Click boost duration: 5s -> 8s |
 | 5 | AUTO CLICKER | $4,500 | x99 | 1 | Clicks a random machine every 8s |
 | 6 | EXPAND FLOOR | $6,000 | x99 | 1 | 6x6 -> 10x10 tiles, re-places machines |
+| 7 | SPLITSCREEN | $15,000 | x99 | 1 | Each machine seats 2 customers; spin result x customers.length doubles income |
 
 ### 9.5 Shop Visibility
 Items are hidden once `purchased >= maxCount`. The list dynamically rebuilds when item count changes. Affordability classes update every 6 frames without full DOM rebuilds (only inner class changes unless count changed).
@@ -487,7 +501,7 @@ The CRT canvas has `opacity: 0.35` in CSS (combined with its internal opacity va
 
 ## 14. Economy Tuning Notes
 
-- **Early game tension:** Start with $250, first machine costs $500. Player must earn $250 before first purchase. At ~$0.74/s that's ~5–6 minutes.
+- **Early game tension:** Start with $150, first machine costs $200. Player needs only $50 more - roughly 1 minute at base speed. The faster first-machine hook keeps early play engaging; cost scaling at x1.45 still creates a meaningful wall by machine 4-5.
 - **Scaling:** Each additional slot costs 45% more. 8 machines = $500 + $725 + $1051 + ... - gets very expensive. Later machines must be cheaper per income unit or player hits a wall.
 - **Click boost value:** At base stats (+0.1x per click, 5s window), spamming a machine to max (+1.0x) doubles its spin rate for 5s. On a base-speed machine (~$0.74/s), that's roughly +$0.74 in extra income per 5s window - a meaningful but not game-breaking reward for active play. Power Click doubles the per-click increment, making max stack reachable in 5 clicks instead of 10.
 - **Math rule:** The spin table for every machine tier must produce positive expected value for the house. It is acceptable (and desirable) for the short-term rolling average to go negative sometimes. The 5-second IPS display will show red during downswings. This is intentional visual chaos.
@@ -524,4 +538,4 @@ Customers move in screen pixel space, not tile space. Depth calculated by conver
 
 ---
 
-*Last updated: Milestone 2 - replaced Hype the Floor with per-machine click boost. Active clicking now speeds up individual machines up to 2x. Three new shop upgrades: Power Click, Extended Boost, Auto Clicker NPC.*
+*Last updated: 0.3.0 - HUD earnings history (1m/5m/1h prev vs current), Splitscreen upgrade ($15k, doubles income), balance display 2x size, economy rebalance ($150 start, $200 first machine).*

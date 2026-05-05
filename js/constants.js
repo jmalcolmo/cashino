@@ -94,7 +94,7 @@ const MACHINE_SHAKE_THRESH = 14; // |amount| >= this → trigger shake
 const MACHINE_BOX_H_SLOT   = 48; // isometric box height for slot machine (px)
 
 // ─── Game Loop ───────────────────────────────────────────────────────────────
-const DT_CAP          = 0.1;   // seconds — max delta-time per frame
+const DT_CAP          = 0.1;   // seconds - max delta-time per frame
 const UI_UPDATE_EVERY = 6;     // frames between DOM updates
 const IPS_WINDOW      = 5;     // seconds for rolling income-per-second average
 

@@ -40,7 +40,7 @@ const ISO = (() => {
     const hw = TILE_W / 2;
     const hh = TILE_H / 2;
 
-    // Right face (south-east wall) — draw first so left face overlaps edge
+    // Right face (south-east wall) - draw first so left face overlaps edge
     ctx.beginPath();
     ctx.moveTo(sx + hw, sy + hh - boxH);
     ctx.lineTo(sx,      sy + TILE_H - boxH);
@@ -70,7 +70,7 @@ const ISO = (() => {
       ctx.stroke();
     }
 
-    // Top face — drawn last so it sits on top
+    // Top face - drawn last so it sits on top
     ctx.beginPath();
     ctx.moveTo(sx,      sy - boxH);
     ctx.lineTo(sx + hw, sy + hh - boxH);

@@ -61,7 +61,7 @@ function init() {
   State.floor = new Floor(6, 6);
   recalcOrigin();
 
-  // Starter machine (free) — centered-ish on 6×6 grid
+  // Starter machine (free), centered-ish on 6x6 grid
   const starter = new Machine('SLOT', 2, 2);
   State.machines.push(starter);
   State.floor.setOccupied(2, 2, true);

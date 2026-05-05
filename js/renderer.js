@@ -85,7 +85,7 @@ const Renderer = {
     const hh = ISO.TILE_H / 2;
     const bH = def.boxH;
 
-    // Reel "screen" — animated stripe on front-left face
+    // Reel "screen" - animated stripe on front-left face
     const reelAlpha = 0.55 + 0.35 * Math.sin(m.reelPhase);
     const reelColors = ['#ff0090','#00d4ff','#ffd700','#39ff14','#9b30ff'];
     const reelColor  = reelColors[Math.floor(m.reelPhase / 1.2) % reelColors.length];
@@ -99,7 +99,7 @@ const Renderer = {
     ctx.arc(x, y - bH + hh * 0.7, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Spin progress light — pulses as spin timer counts down
+    // Spin progress light - pulses as spin timer counts down
     ctx.globalAlpha  = 0.8;
     ctx.shadowBlur   = 8;
     ctx.fillStyle    = def.accentColor;

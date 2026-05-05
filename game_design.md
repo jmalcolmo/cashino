@@ -1,4 +1,4 @@
-# IDLE CASINO — Game Design Document
+# IDLE CASINO - Game Design Document
 **Version:** 0.1 (Milestone 1 scaffold)
 **Stack:** Vanilla JS · Canvas2D · HTML/CSS · No build step
 
@@ -7,20 +7,20 @@
 ## 1. Vision & Aesthetic
 
 ### 1.1 Core Feeling
-This is an idle game that looks like it could run on an old-school arcade cabinet. Not polished or corporate — grainy, vibrant, slightly chaotic. The player should feel like they own a seedy, neon-soaked casino where money visibly flows in and out in real time.
+This is an idle game that looks like it could run on an old-school arcade cabinet. Not polished or corporate - grainy, vibrant, slightly chaotic. The player should feel like they own a seedy, neon-soaked casino where money visibly flows in and out in real time.
 
 ### 1.2 Visual Direction
 - **CRT aesthetic:** Grain overlay (animated per-frame noise texture), scanline pass (every 3px), screen vignette, and occasional horizontal flicker lines. Implemented as a second canvas layered on top of the game canvas at reduced opacity.
 - **Color palette:** Near-black backgrounds (`#04010a`), neon pink (`#ff0090`), electric blue (`#00d4ff`), gold (`#ffd700`), hot green (`#39ff14`), blood red (`#ff3333`), deep purple (`#9b30ff`). Everything glows. No flat colors.
-- **Font:** Press Start 2P (Google Fonts) — used for all text including the HUD, shop panel, floating dollar amounts, and badges.
+- **Font:** Press Start 2P (Google Fonts) - used for all text including the HUD, shop panel, floating dollar amounts, and badges.
 - **Isometric perspective:** All game objects rendered on an isometric tile grid. Machines physically occupy tile space. Customers walk in world-space.
-- **No screen shake.** Individual machines shake on big payouts — not the whole screen.
+- **No screen shake.** Individual machines shake on big payouts - not the whole screen.
 
 ### 1.3 Anti-"Claude Game" Principles
 - No clean sans-serif UI
 - No flat pastel colors
 - No minimalist whitespace
-- Everything should feel slightly overstimulating — neon bleed, glow, grain, animated lights
+- Everything should feel slightly overstimulating - neon bleed, glow, grain, animated lights
 - Money text should feel urgent and real, not decorative
 
 ---
@@ -31,8 +31,8 @@ This is an idle game that looks like it could run on an old-school arcade cabine
 | Layer | Technology | Purpose |
 |---|---|---|
 | Game canvas (`#game-canvas`) | Canvas2D | Isometric floor, machines, customers, particles |
-| CRT overlay (`#crt-canvas`) | Canvas2D (pointer-events: none) | Grain, scanlines, vignette — drawn every frame |
-| Shop panel (`#shop-panel`) | HTML/CSS | Upgrade list, balance, income rate — updated ~10×/sec |
+| CRT overlay (`#crt-canvas`) | Canvas2D (pointer-events: none) | Grain, scanlines, vignette - drawn every frame |
+| Shop panel (`#shop-panel`) | HTML/CSS | Upgrade list, balance, income rate - updated ~10×/sec |
 | HUD (`#hud`) | HTML/CSS (absolute overlay) | Balance display, Hype button |
 
 ### 2.2 File Structure
@@ -42,20 +42,20 @@ idle-casino/
 ├── style.css
 ├── game_design.md
 ├── .claude/
-│   └── launch.json        — preview server config (npx serve, port 3457)
+│   └── launch.json        - preview server config (npx serve, port 3457)
 └── js/
-    ├── iso.js             — isometric math (toScreen, toTile, drawTile, drawBox)
-    ├── state.js           — central mutable game state object
-    ├── particle.js        — FloatingText, Spark, HypePulse classes
-    ├── machine.js         — MACHINE_DEFS, Machine class
-    ├── customer.js        — Customer class
-    ├── floor.js           — Floor class (tile grid)
-    ├── shop.js            — SHOP_ITEMS array, Shop purchase logic
-    ├── renderer.js        — Renderer (draws floor, entities, particles)
-    ├── crt.js             — CRT overlay rendering
-    ├── ui.js              — HTML shop panel + HUD DOM updates
-    ├── input.js           — Unified mouse + keyboard input
-    └── main.js            — init(), gameLoop(), helpers (triggerHype, spawnCustomer, recalcOrigin)
+    ├── iso.js             - isometric math (toScreen, toTile, drawTile, drawBox)
+    ├── state.js           - central mutable game state object
+    ├── particle.js        - FloatingText, Spark, HypePulse classes
+    ├── machine.js         - MACHINE_DEFS, Machine class
+    ├── customer.js        - Customer class
+    ├── floor.js           - Floor class (tile grid)
+    ├── shop.js            - SHOP_ITEMS array, Shop purchase logic
+    ├── renderer.js        - Renderer (draws floor, entities, particles)
+    ├── crt.js             - CRT overlay rendering
+    ├── ui.js              - HTML shop panel + HUD DOM updates
+    ├── input.js           - Unified mouse + keyboard input
+    └── main.js            - init(), gameLoop(), helpers (triggerHype, spawnCustomer, recalcOrigin)
 ```
 
 ### 2.3 Load Order (script tags)
@@ -64,7 +64,7 @@ idle-casino/
 All cross-module references that are only needed at runtime (e.g. `spawnCustomer` called from shop item effects) safely resolve because they execute after `main.js` runs.
 
 ### 2.4 Game Loop
-- `requestAnimationFrame` — uncapped frame rate
+- `requestAnimationFrame` - uncapped frame rate
 - Delta time capped at 100ms per frame to prevent spiral-of-death on tab blur
 - `State.tick` accumulates total elapsed seconds
 - UI DOM updated every 6 frames (~10×/sec) to avoid layout thrash
@@ -143,7 +143,7 @@ State = {
 ## 4. Economy & Math
 
 ### 4.1 Design Principle
-The house always wins in aggregate. Individual spins can and do go negative (customer hits jackpot, player visibly loses that money). The chaos is part of the appeal — income fluctuates wildly but trends upward.
+The house always wins in aggregate. Individual spins can and do go negative (customer hits jackpot, player visibly loses that money). The chaos is part of the appeal - income fluctuates wildly but trends upward.
 
 ### 4.2 Slot Machine Spin Table (current)
 | Outcome | Probability | House Amount | Label |
@@ -163,7 +163,7 @@ The house always wins in aggregate. Individual spins can and do go negative (cus
 ### 4.3 Starting Economy
 - Starting money: **$250**
 - First purchasable slot machine: **$500**
-- Player must earn ~$250 before first upgrade — creates early engagement loop
+- Player must earn ~$250 before first upgrade - creates early engagement loop
 - Second machine at $500 × 1.45¹ = **$725**, etc.
 
 ### 4.4 Income Rolling Average
@@ -178,31 +178,31 @@ Shown in shop panel as `▲ $X.XX/s` (green) or `▼ $X.XX/s` (red).
 
 ### 5.1 Machine Class
 Each `Machine` instance has:
-- `type` — string key into `MACHINE_DEFS`
-- `col, row` — tile position on the floor
-- `customers[]` — Customer instances currently using this machine
-- `spinInterval` — seconds between spins (modified by speed upgrades)
-- `spinTimer` — countdown to next spin (staggered on spawn via random seed)
-- `shakeTimer, shakeAmount` — drives per-machine shake on big payouts
-- `reelPhase` — running phase accumulator for animated reel light cycling
-- `active` — reserved for future enable/disable mechanic
+- `type` - string key into `MACHINE_DEFS`
+- `col, row` - tile position on the floor
+- `customers[]` - Customer instances currently using this machine
+- `spinInterval` - seconds between spins (modified by speed upgrades)
+- `spinTimer` - countdown to next spin (staggered on spawn via random seed)
+- `shakeTimer, shakeAmount` - drives per-machine shake on big payouts
+- `reelPhase` - running phase accumulator for animated reel light cycling
+- `active` - reserved for future enable/disable mechanic
 
 ### 5.2 Spin Logic
 1. Timer counts down by delta-time each frame
 2. When `spinTimer <= 0`: roll random, walk through spin table cumulative probabilities, return house profit amount
 3. Amount returned to `main.js` which: adds to `State.money`, spawns `FloatingText`, spawns `Spark` burst if `|amount| >= 14`, triggers machine shake if `|amount| >= 14`
-4. `spinTimer` resets to `spinInterval × (0.85 + random × 0.3)` — jitter prevents all machines from spinning simultaneously
+4. `spinTimer` resets to `spinInterval × (0.85 + random × 0.3)` - jitter prevents all machines from spinning simultaneously
 
 ### 5.3 Machine Definitions (`MACHINE_DEFS`)
 Each definition contains:
-- `name` — display name
-- `tileSize` — 1 for slot machines, 2 for tables (future)
-- `maxCustomers` — max simultaneously seated customers
-- `baseSpinInterval` — before speed upgrades
-- `boxH` — isometric box height in pixels
-- `colors` — `{ top, left, right, topStroke, sideStroke }` for `drawBox`
-- `accentColor` — neon color for lights and glow
-- `spinTable[]` — array of `{ chance, label, amount }` entries summing to 1.0
+- `name` - display name
+- `tileSize` - 1 for slot machines, 2 for tables (future)
+- `maxCustomers` - max simultaneously seated customers
+- `baseSpinInterval` - before speed upgrades
+- `boxH` - isometric box height in pixels
+- `colors` - `{ top, left, right, topStroke, sideStroke }` for `drawBox`
+- `accentColor` - neon color for lights and glow
+- `spinTable[]` - array of `{ chance, label, amount }` entries summing to 1.0
 
 ### 5.4 Machine Progression (planned)
 | Tier | Name | Tile Size | Max Customers | Spin Interval | Notes |
@@ -211,17 +211,17 @@ Each definition contains:
 | 2 | Poker Machine | 1×1 | 1 | 1.8s | Faster, higher variance |
 | 3 | Blackjack Table | 2×2 | 4 | 4.0s | Multi-customer, dealer NPC |
 | 4 | Craps Table | 2×3 | 6 | 5.0s | Biggest win animations, crowd forms |
-| 5+ | TBD | — | — | — | Escalates from there |
+| 5+ | TBD | - | - | - | Escalates from there |
 
 Higher tier machines should feel meaningfully busier: more customers crowding around, dealer NPCs, bigger/louder win animations.
 
 ### 5.5 Machine Visual Rendering
 Drawn in `renderer._drawMachine`:
-1. `ISO.drawBox` — main cabinet (3 faces, neon top edge)
-2. Animated reel light — color cycles through neon palette using `reelPhase`, pulsing arc on top face
-3. Spin progress lights — two small dots on the top face pulse in sync with spin countdown
-4. Customer count badge — `×N` above machine when customers are seated
-5. Shake offset — if `shakeTimer > 0`, random x/y displacement applied to draw position each frame
+1. `ISO.drawBox` - main cabinet (3 faces, neon top edge)
+2. Animated reel light - color cycles through neon palette using `reelPhase`, pulsing arc on top face
+3. Spin progress lights - two small dots on the top face pulse in sync with spin countdown
+4. Customer count badge - `×N` above machine when customers are seated
+5. Shake offset - if `shakeTimer > 0`, random x/y displacement applied to draw position each frame
 
 ---
 
@@ -229,25 +229,25 @@ Drawn in `renderer._drawMachine`:
 
 ### 6.1 Customer Class
 Each `Customer` instance has:
-- `id` — monotonically incrementing for palette cycling
-- `x, y` — current screen position (world-space, not tile-space)
-- `tx, ty` — target screen position
-- `machine` — reference to assigned Machine
-- `state` — `'moving'` or `'playing'`
-- `color` — cycling from 8-color palette
-- `speed` — 65–90 px/sec base movement
-- `size` — 7px radius circle
-- `bob` — per-customer phase offset for idle bobbing animation
-- `boostTimer` — seconds of hype boost remaining
+- `id` - monotonically incrementing for palette cycling
+- `x, y` - current screen position (world-space, not tile-space)
+- `tx, ty` - target screen position
+- `machine` - reference to assigned Machine
+- `state` - `'moving'` or `'playing'`
+- `color` - cycling from 8-color palette
+- `speed` - 65–90 px/sec base movement
+- `size` - 7px radius circle
+- `bob` - per-customer phase offset for idle bobbing animation
+- `boostTimer` - seconds of hype boost remaining
 
 ### 6.2 Lifecycle
 1. Spawned from `spawnCustomer(machine)` in `main.js`
 2. Spawn point: bottom-most diamond vertex of the floor (the entrance), ±15px horizontal jitter
-3. `assignMachine(machine)` — sets target position just in front of the machine tile; adds self to `machine.customers[]`
+3. `assignMachine(machine)` - sets target position just in front of the machine tile; adds self to `machine.customers[]`
 4. Moves toward target at `speed × dt` each frame (linear interpolation)
 5. On arrival: state transitions to `'playing'`
 6. Machine will only spin if `machine.customers.length > 0`
-7. No departure logic yet — customers stay permanently (planned: they leave after N spins, new one arrives)
+7. No departure logic yet - customers stay permanently (planned: they leave after N spins, new one arrives)
 
 ### 6.3 Customer Rendering
 - Drop shadow ellipse below feet
@@ -340,10 +340,10 @@ Each item card shows:
 - `purchased/maxCount` counter (grey, bottom-right)
 
 **Affordability states:**
-- `affordable` — green border glow, green cost text, green hotkey badge
-- `unaffordable` — 42% opacity, default styling
-- `focused` — pink border glow (keyboard navigation)
-- `just-bought` — brief green box-shadow flash animation (0.4s)
+- `affordable` - green border glow, green cost text, green hotkey badge
+- `unaffordable` - 42% opacity, default styling
+- `focused` - pink border glow (keyboard navigation)
+- `just-bought` - brief green box-shadow flash animation (0.4s)
 
 ### 9.3 Cost Scaling
 ```
@@ -407,12 +407,12 @@ Every action reachable by mouse AND keyboard. Neither is optional.
 - 2D grid of `cols × rows` boolean cells (`false` = unoccupied)
 - `findFreeTile()` returns random unoccupied interior tile (1 tile from edges)
 - `setOccupied(col, row, val)` marks a tile
-- `freeCount()` — used to gate shop item availability (prevents purchase if no free tiles)
+- `freeCount()` - used to gate shop item availability (prevents purchase if no free tiles)
 
 ### 11.2 Starting Floor
 - **6×6 tiles**
 - Origin re-calculated to center the floor in the canvas on resize
-- Starter machine pre-placed at tile `(2, 2)` — free, not purchased
+- Starter machine pre-placed at tile `(2, 2)` - free, not purchased
 - Player needs to earn before buying the next machine
 
 ### 11.3 Floor Entrance
@@ -431,7 +431,7 @@ Upgrade: **6×6 → 10×10**
 ## 12. CRT Overlay
 
 Rendered every frame on `#crt-canvas`:
-1. **Grain:** 200×200 noise tile regenerated each frame, tiled across canvas at 55% opacity — creates animated film grain
+1. **Grain:** 200×200 noise tile regenerated each frame, tiled across canvas at 55% opacity - creates animated film grain
 2. **Scanlines:** 1px black lines every 3px at 18% opacity
 3. **Vignette:** Radial gradient dark edges (`rgba(0,0,0,0)` center → `rgba(0,0,0,0.62)` edge)
 4. **Flicker:** 0.6% chance per frame of a semi-transparent horizontal line (1–3px tall) at random y position
@@ -445,7 +445,7 @@ The CRT canvas has `opacity: 0.35` in CSS (combined with its internal opacity va
 ### 13.1 Gameplay
 - Customer departure + respawn cycle
 - Machine enable/disable (toggle machines off during slow periods)
-- Prestige system — reset with multiplier
+- Prestige system - reset with multiplier
 - Lucky Hour / timed buff system
 - Achievement unlocks
 - News ticker showing recent big wins/losses
@@ -482,8 +482,8 @@ The CRT canvas has `opacity: 0.35` in CSS (combined with its internal opacity va
 ## 14. Economy Tuning Notes
 
 - **Early game tension:** Start with $250, first machine costs $500. Player must earn $250 before first purchase. At ~$0.74/s that's ~5–6 minutes.
-- **Scaling:** Each additional slot costs 45% more. 8 machines = $500 + $725 + $1051 + ... — gets very expensive. Later machines must be cheaper per income unit or player hits a wall.
-- **Hype value:** At 5s cooldown with 160px radius, boosting 1 customer for 3s adds maybe 1–2 extra spins per hype cycle. Roughly +$2 per hype at base stats. Not huge — the upgrade that makes hype matter more is `SPIN FASTER`.
+- **Scaling:** Each additional slot costs 45% more. 8 machines = $500 + $725 + $1051 + ... - gets very expensive. Later machines must be cheaper per income unit or player hits a wall.
+- **Hype value:** At 5s cooldown with 160px radius, boosting 1 customer for 3s adds maybe 1–2 extra spins per hype cycle. Roughly +$2 per hype at base stats. Not huge - the upgrade that makes hype matter more is `SPIN FASTER`.
 - **Math rule:** The spin table for every machine tier must produce positive expected value for the house. It is acceptable (and desirable) for the short-term rolling average to go negative sometimes. The 5-second IPS display will show red during downswings. This is intentional visual chaos.
 
 ---
@@ -518,4 +518,4 @@ Customers move in screen pixel space, not tile space. Depth calculated by conver
 
 ---
 
-*Last updated: Milestone 1 — isometric floor, single slot machine, one customer, floating income text, shop panel, hype mechanic, CRT overlay.*
+*Last updated: Milestone 1 - isometric floor, single slot machine, one customer, floating income text, shop panel, hype mechanic, CRT overlay.*

@@ -15,7 +15,7 @@ const State = {
     RADIUS:       160,
   },
 
-  // spin speed multiplier — upgraded via shop
+  // spin speed multiplier, upgraded via shop
   spinSpeedMult: 1.0,
 
   canvas:        null,

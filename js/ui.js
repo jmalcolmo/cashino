@@ -36,7 +36,7 @@ const UI = {
 
     const ips      = State.incomePerSecond;
     const rateEl   = document.getElementById('shop-rate');
-    const sign     = ips > 0 ? '▲' : ips < 0 ? '▼' : '—';
+    const sign     = ips > 0 ? '▲' : ips < 0 ? '▼' : '-';
     rateEl.textContent = `${sign} $${Math.abs(ips).toFixed(2)}/s`;
     rateEl.className   = ips > 0 ? 'rate-up' : ips < 0 ? 'rate-down' : 'rate-zero';
 

@@ -1,0 +1,14 @@
+# Claude Code — local only, never committed
+CLAUDE.md
+.claude/
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/settings.json
+
+# Logs
+*.log
+npm-debug.log*

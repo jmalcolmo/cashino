@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDLE CASINO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+
+    <div id="floor-section">
+      <div id="hud">
+        <span id="balance-display">$0</span>
+        <button id="hype-btn" class="hype-ready" title="Click floor or press H">
+          <span class="key-hint">[H]</span> HYPE THE FLOOR
+        </button>
+      </div>
+      <div id="canvas-wrap">
+        <canvas id="game-canvas"></canvas>
+        <canvas id="crt-canvas"></canvas>
+      </div>
+    </div>
+
+    <div id="shop-panel">
+      <div id="shop-header">
+        <div id="shop-title">UPGRADES</div>
+        <div id="shop-stats">
+          <div id="shop-money">$0</div>
+          <div id="shop-rate">— $0.00/s</div>
+        </div>
+      </div>
+      <div id="shop-items-list"></div>
+      <div id="shop-footer">
+        <span class="key-hint-small">[1–9] BUY · [H] HYPE · [↑↓] SCROLL</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/iso.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/particle.js"></script>
+  <script src="js/machine.js"></script>
+  <script src="js/customer.js"></script>
+  <script src="js/floor.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/crt.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

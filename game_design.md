@@ -44,23 +44,24 @@ idle-casino/
 ├── .claude/
 │   └── launch.json        - preview server config (npx serve, port 3457)
 └── js/
-    ├── constants.js       - all numeric constants (loaded first)
+    ├── constants.js       - all numeric constants + formatMoney() (loaded first)
     ├── iso.js             - isometric math (toScreen, toTile, drawTile, drawBox)
     ├── state.js           - central mutable game state object
     ├── particle.js        - FloatingText, Spark classes
-    ├── machine.js         - MACHINE_DEFS, Machine class (click boost per-machine)
-    ├── customer.js        - Customer class
+    ├── machine.js         - MACHINE_DEFS, Machine class (local upgrades, always spins)
+    ├── customer.js        - CrowdPerson class (visual wandering entity)
     ├── floor.js           - Floor class (tile grid)
-    ├── shop.js            - SHOP_ITEMS array, Shop purchase logic
-    ├── renderer.js        - Renderer (draws floor, entities, particles)
+    ├── supercomputer.js   - SC_UPGRADES data + Supercomputer visual entity + purchase logic
+    ├── shop.js            - MachineShop (machine buy + local upgrade logic)
+    ├── renderer.js        - Renderer (floor, supercomputer, entities, particles)
     ├── crt.js             - CRT overlay rendering
-    ├── ui.js              - HTML shop panel + HUD DOM updates
-    ├── input.js           - Unified mouse + keyboard input
-    └── main.js            - init(), gameLoop(), helpers (applyClickBoost, spawnCustomer, recalcOrigin)
+    ├── ui.js              - Status panel + SC overlay + machine overlay DOM
+    ├── input.js           - Canvas click routing (floor/machine/supercomputer)
+    └── main.js            - init(), gameLoop(), population decay, processSpinResult()
 ```
 
 ### 2.3 Load Order (script tags)
-`constants → iso → state → particle → machine → customer → floor → shop → renderer → crt → ui → input → main`
+`constants → iso → state → particle → machine → customer → floor → supercomputer → shop → renderer → crt → ui → input → main`
 
 All cross-module references that are only needed at runtime (e.g. `spawnCustomer` called from shop item effects) safely resolve because they execute after `main.js` runs.
 
@@ -109,6 +110,43 @@ Origin re-calculated on window resize and after floor expansion.
 
 ```javascript
 State = {
+  money,           // current balance; starts at 0
+  totalEarned,     // lifetime earnings
+  incomePerSecond, // rolling 5s average
+
+  machines[],      // Machine instances
+  crowdPersons[],  // CrowdPerson visual entities (no mechanical role)
+  particles[],     // FloatingText | Spark
+
+  floor,           // Floor instance
+
+  floorPopulation, // float: current people count, decays over time
+  floorCapacity,   // int: max people (starts 20, upgradeable via supercomputer)
+
+  globalWagerMult, // multiplier on all spin results from supercomputer Wager upgrades
+  globalSpeedMult, // spin interval multiplier from supercomputer Roll Rate upgrades
+
+  machineSlotCap,  // max machines on floor (starts 4, upgradeable)
+
+  canvas, ctx, crtCanvas,
+  floorOriginX, floorOriginY,
+  tick, lastTime,
+}
+```
+
+---
+
+## 3b. DEPRECATED State Fields (removed in 0.5.0)
+
+`splitscreen`, `spinSpeedMult`, `clickMultiplier`, `autoClickInterval`, `autoClickTimer`,
+`clickBoostPerClick`, `clickBoostMax`, `clickBoostDuration` - all removed.
+
+---
+
+## 3c. Old 3. Game State (`state.js`)
+
+```javascript
+State = {
   money,           // current player balance (float); starts at STARTING_MONEY
   totalEarned,     // lifetime earnings (for stats/achievements later)
   incomePerSecond, // rolling 5-second average
@@ -142,6 +180,32 @@ State = {
 
 ## 4. Economy & Math
 
+### 4.0 Starting Economy (v0.5.0)
+- Starting money: **$0**
+- 1 free slot machine pre-placed, spins immediately
+- First supercomputer upgrades: Wager Lv1 = $5, Roll Rate Lv1 = $3 - reachable in under 10 seconds
+- Machine 2 costs $20, machine 3 costs $60, machine 4 costs $180
+- Floor capacity starts at 20; each click on the floor adds 1 person (1:1)
+- Population decays at 1 person/8 seconds passively
+
+### 4.0b Crowd Multiplier
+```
+crowdMultiplier = 1 + (floorPopulation / floorCapacity) * CROWD_MULT_BONUS_BASE
+```
+At 0 people: 1x. At full capacity: 2x. Applied inside `Machine.doSpin()` to every spin result.
+
+### 4.0c Supercomputer Upgrade Math
+**Wager (Tier 1, 50 levels):** each level +9.4% cumulative. Level 50 = ~100x total payout.
+Cost formula: `$5 * 1.35^level`
+
+**Roll Rate (Tier 1, 50 levels):** each level -3.5% spin interval. Level 50 = ~5x faster spin rate.
+Cost formula: `$3 * 1.35^level`
+
+**Floor Capacity (Tier 1, 20 levels):** +5 capacity per level. Max = 120 people.
+Cost formula: `$30 * 1.40^level`
+
+Future tiers pick up where Tier 1 maxes out and push multipliers higher (e.g., Tier 3 Wager could reach 500x).
+
 ### 4.1 Design Principle
 The house always wins in aggregate. Individual spins can and do go negative (customer hits jackpot, player visibly loses that money). The chaos is part of the appeal - income fluctuates wildly but trends upward.
 
@@ -161,10 +225,7 @@ The house always wins in aggregate. Individual spins can and do go negative (cus
 **Net income per machine (base):** ~$0.74/sec
 
 ### 4.3 Starting Economy
-- Starting money: **$150**
-- First purchasable slot machine: **$200**
-- Player must earn ~$50 before first upgrade - quick early hook, then cost scales fast
-- Second machine at $200 × 1.45¹ = **$290**, third at ~$420, etc.
+See section 4.0 for current economy. Legacy values ($150 start, $200 first machine) removed in v0.5.0.
 
 ### 4.4 Income Rolling Average
 ```
@@ -532,4 +593,4 @@ Customers move in screen pixel space, not tile space. Depth calculated by conver
 
 ---
 
-*Last updated: 0.3.0 - HUD earnings history (1m/5m/1h prev vs current), Splitscreen upgrade ($15k, doubles income), balance display 2x size, economy rebalance ($150 start, $200 first machine).*
+*Last updated: 0.5.0 - Supercomputer entity + tiered upgrades, floor crowd system (click to spawn, decay, crowd multiplier), machine local upgrade panels, machine buy via machine panel, CrowdPerson visual entity, economy reset ($0 start), formatMoney for large numbers.*

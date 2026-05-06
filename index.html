@@ -40,20 +40,47 @@
       <div id="canvas-wrap">
         <canvas id="game-canvas"></canvas>
         <canvas id="crt-canvas"></canvas>
+        <!-- overlay panels are injected here by ui.js -->
       </div>
     </div>
 
     <div id="shop-panel">
       <div id="shop-header">
-        <div id="shop-title">UPGRADES</div>
+        <div id="shop-title">CASINO</div>
         <div id="shop-stats">
-          <div id="shop-money">$0</div>
-          <div id="shop-rate">- $0.00/s</div>
+          <div id="status-money">$0</div>
+          <div id="status-rate" class="rate-zero">- $0/s</div>
         </div>
       </div>
-      <div id="shop-items-list"></div>
+
+      <div id="crowd-section">
+        <div id="crowd-count">CROWD  0 / 20</div>
+        <div id="crowd-bar"><div id="crowd-bar-fill"></div></div>
+        <div id="crowd-mult">1.00x WAGER</div>
+        <div class="crowd-hint">CLICK FLOOR TO FILL</div>
+      </div>
+
+      <div id="status-hints">
+        <div class="hint-row">CLICK SUPERCOMPUTER</div>
+        <div class="hint-row">TO OPEN UPGRADES</div>
+        <div class="hint-row hint-dim">CLICK MACHINE TO UPGRADE</div>
+      </div>
+
       <div id="shop-footer">
-        <span class="key-hint-small">[1-9] BUY · [CLICK] MACHINE · [↑↓] SCROLL</span>
+        <div id="hud-earnings-side">
+          <div class="earn-row">
+            <span class="earn-label">1M</span>
+            <span class="earn-val" id="earn-prev-1m-s">--</span>
+            <span class="earn-sep">|</span>
+            <span class="earn-val" id="earn-curr-1m-s">$0</span>
+          </div>
+          <div class="earn-row">
+            <span class="earn-label">5M</span>
+            <span class="earn-val" id="earn-prev-5m-s">--</span>
+            <span class="earn-sep">|</span>
+            <span class="earn-val" id="earn-curr-5m-s">$0</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -66,6 +93,7 @@
   <script src="js/machine.js"></script>
   <script src="js/customer.js"></script>
   <script src="js/floor.js"></script>
+  <script src="js/supercomputer.js"></script>
   <script src="js/shop.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/crt.js"></script>

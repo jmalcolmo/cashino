@@ -5,6 +5,42 @@ The top entry is always the most recent push. Entries are added before every com
 
 ---
 
+## [0.5.1] 2026-05-05 - Spin table rebalance: reduced jackpot rate and loss payout
+
+### Changed
+- SPIN_JACKPOT_CHANCE reduced 80% (0.05 -> 0.01) to make jackpots much rarer
+- SPIN_SMALL_WIN_CHANCE increased from 0.55 to 0.59 to absorb freed probability
+- Loss payout range reduced from -$9/-$4 to -$5/-$2 (smaller player wins on loss events)
+
+---
+
+## [0.5.0] 2026-05-05 - Supercomputer upgrades, floor crowd system, machine panels, economy reset
+
+### Added
+- Supercomputer entity: isometric server-rack visual positioned left of the floor; clicking opens global upgrade panel
+- Tier 1 supercomputer upgrades: Wager Boost (50 levels, +9.4%/level, ~100x at max), Roll Rate (50 levels, -3.5%/level, ~5x faster at max), Floor Capacity (20 levels, +5 cap/level)
+- Floor population system: clicking any floor tile spawns 1 visual crowd person at that location and increments `State.floorPopulation`; population decays at 1 person/8s passively; crowd multiplier = 1 + (population/capacity) applied to all spin results (max 2x at full cap)
+- CrowdPerson visual entity (replaces Customer): spawns at click location, wanders to machines or random tiles, idles, occasionally cheers (arm animation + glow), then fades out and leaves after random lifetime (45-120s)
+- Machine local upgrade panel: clicking a machine opens a contextual panel with Spin Rate (10 levels, -10%/level) and Payout (10 levels, +20%/level) upgrades, plus Buy Machine button
+- Machine slot cap starts at 4; costs scale $20 - $60 - $180 per additional machine
+- `formatMoney()` utility in constants.js: formats K/M/B/T/Qa suffixes for large numbers
+- `MachineShop` in shop.js handles all machine purchase and local upgrade logic
+- `SC_UPGRADES` array in supercomputer.js - extensible tier structure for future tiers
+
+### Changed
+- Machines now spin passively at all times (no customer seating required); crowd multiplier replaces the old customer-count multiplier
+- Starting money reset to $0; first upgrades cost $3-5 and are reachable within seconds of spawning a crowd
+- Old shop panel (right side) repurposed as status panel: shows balance, IPS, crowd count/bar/multiplier, and hint text
+- `customer.js` file now contains `CrowdPerson` class (visual only); old `Customer` mechanic removed entirely
+- `shop.js` now contains `MachineShop` (was `SHOP_ITEMS` + `Shop`)
+- All spin particle labels now use `formatMoney()` for proper K/M/B/T formatting at high upgrade levels
+- Removed: splitscreen, click multiplier, auto clicker, old shop upgrades, spin speed mult, all legacy customer spawn/assign logic
+
+### Fixed
+- Supercomputer panel clipping: anchored top-right in canvas area instead of center to avoid overflow on narrow canvases
+
+---
+
 ## [0.4.0] 2026-05-04 - Click-to-spin system, repeatable Power Click upgrade
 
 ### Changed

@@ -1,47 +1,53 @@
-// Unified input - every action reachable by mouse OR keyboard
-
 const Input = {
   init() {
     const canvas = State.canvas;
 
-    // Mouse: click a machine tile to trigger immediate spins
     canvas.addEventListener('click', e => {
-      const r    = canvas.getBoundingClientRect();
-      const sx   = canvas.width  / r.width;
-      const sy   = canvas.height / r.height;
-      const cx   = (e.clientX - r.left) * sx;
-      const cy   = (e.clientY - r.top)  * sy;
-      const tile = ISO.toTile(cx, cy, State.floorOriginX, State.floorOriginY);
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / rect.width;
+      const scaleY = canvas.height / rect.height;
+      // Canvas pixel coordinates
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top)  * scaleY;
+      // CSS pixel coordinates (for HTML overlay positioning)
+      const cssX = e.clientX - rect.left;
+      const cssY = e.clientY - rect.top;
+
+      // 1. Supercomputer hit test
+      if (Supercomputer.containsPoint(cx, cy)) {
+        if (UI._openPanel === 'supercomputer') {
+          UI.closeAllPanels();
+        } else {
+          UI.openSupercomputer();
+        }
+        return;
+      }
+
+      // 2. Machine hit test (tile-based)
+      const tile    = ISO.toTile(cx, cy, State.floorOriginX, State.floorOriginY);
       const machine = State.machines.find(m => m.col === tile.col && m.row === tile.row);
-      if (machine) applyClick(machine);
-    });
+      if (machine) {
+        if (UI._openPanel === 'machine' && UI._selectedMachine === machine) {
+          UI.closeAllPanels();
+        } else {
+          UI.openMachinePanel(machine, cssX, cssY);
+        }
+        return;
+      }
 
-    // Keyboard
-    document.addEventListener('keydown', e => {
-      switch (e.code) {
+      // 3. Close any open panel on click-outside
+      if (UI.isAnyPanelOpen()) {
+        UI.closeAllPanels();
+        return;
+      }
 
-        // 1-9 - buy shop item at that slot
-        case 'Digit1': case 'Digit2': case 'Digit3':
-        case 'Digit4': case 'Digit5': case 'Digit6':
-        case 'Digit7': case 'Digit8': case 'Digit9':
-          UI.buy(parseInt(e.key) - 1);
-          break;
-
-        // Arrow keys - scroll shop focus
-        case 'ArrowDown':
-          e.preventDefault();
-          UI.moveFocus(1);
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          UI.moveFocus(-1);
-          break;
-
-        // Enter / Space - purchase focused item
-        case 'Enter':
-        case 'Space':
-          UI.buy(UI.getFocusIndex());
-          break;
+      // 4. Floor click - spawn crowd person + increment population
+      const f = State.floor;
+      if (f && tile.col >= 0 && tile.col < f.cols && tile.row >= 0 && tile.row < f.rows) {
+        if (Math.round(State.floorPopulation) < State.floorCapacity) {
+          State.floorPopulation = Math.min(State.floorPopulation + 1, State.floorCapacity);
+          State.crowdPersons.push(new CrowdPerson(cx, cy));
+        }
       }
     });
   },

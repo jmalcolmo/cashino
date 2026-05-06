@@ -9,6 +9,7 @@ const Renderer = {
     ctx.fillRect(0, 0, W, H);
 
     this._drawFloor(ctx);
+    Supercomputer.draw(ctx);
     this._drawEntities(ctx);
     this._drawParticles(ctx);
   },
@@ -22,11 +23,9 @@ const Renderer = {
       for (let c = 0; c < floor.cols; c++) {
         const s    = ISO.toScreen(c, r, ox, oy);
         const even = (c + r) % 2 === 0;
-        ISO.drawTile(
-          ctx, s.x, s.y,
+        ISO.drawTile(ctx, s.x, s.y,
           even ? '#092c13' : '#0b3416',
-          '#1a6030'
-        );
+          '#1a6030');
       }
     }
 
@@ -37,11 +36,11 @@ const Renderer = {
 
   _drawEntrance(ctx, x, y) {
     ctx.save();
-    ctx.globalAlpha  = 0.45 + 0.15 * Math.sin(State.tick * 2.5);
-    ctx.strokeStyle  = '#39ff14';
-    ctx.shadowColor  = '#39ff14';
-    ctx.shadowBlur   = 10;
-    ctx.lineWidth    = 2;
+    ctx.globalAlpha = 0.45 + 0.15 * Math.sin(State.tick * 2.5);
+    ctx.strokeStyle = '#39ff14';
+    ctx.shadowColor = '#39ff14';
+    ctx.shadowBlur  = 10;
+    ctx.lineWidth   = 2;
     for (let i = 0; i < 2; i++) {
       const offset = i * 14;
       ctx.beginPath();
@@ -55,14 +54,20 @@ const Renderer = {
 
   _drawEntities(ctx) {
     const entities = [];
-    State.machines.forEach(m  => entities.push({ depth: m.depth, draw: () => this._drawMachine(ctx, m)  }));
-    State.customers.forEach(c => entities.push({ depth: c.depth, draw: () => c.draw(ctx, State.tick) }));
+    State.machines.forEach(m => entities.push({
+      depth: m.depth,
+      draw:  () => this._drawMachine(ctx, m),
+    }));
+    State.crowdPersons.forEach(p => entities.push({
+      depth: p.depth,
+      draw:  () => p.draw(ctx, State.tick),
+    }));
     entities.sort((a, b) => a.depth - b.depth);
     entities.forEach(e => e.draw());
   },
 
   _drawMachine(ctx, m) {
-    const def  = m.def;
+    const def = m.def;
     let { x, y } = m.screenPos;
 
     if (m.shakeTimer > 0) {
@@ -77,9 +82,9 @@ const Renderer = {
     const hh = ISO.TILE_H / 2;
     const bH = def.boxH;
 
-    // Reel "screen" - animated stripe on front-left face
+    // Animated reel color indicator
     const reelAlpha  = 0.55 + 0.35 * Math.sin(m.reelPhase);
-    const reelColors = ['#ff0090','#00d4ff','#ffd700','#39ff14','#9b30ff'];
+    const reelColors = ['#ff0090', '#00d4ff', '#ffd700', '#39ff14', '#9b30ff'];
     const reelColor  = reelColors[Math.floor(m.reelPhase / 1.2) % reelColors.length];
 
     ctx.globalAlpha = reelAlpha;
@@ -90,14 +95,13 @@ const Renderer = {
     ctx.arc(x, y - bH + hh * 0.7, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Spin progress light - pulses as spin timer counts down
-    ctx.globalAlpha  = 0.8;
-    ctx.shadowBlur   = 8;
-    ctx.fillStyle    = def.accentColor;
-    ctx.shadowColor  = def.accentColor;
-    const progress   = 1 - m.spinTimer / m.spinInterval;
-    const pulse      = 0.4 + 0.6 * Math.sin(progress * Math.PI);
-    ctx.globalAlpha  = pulse * 0.9;
+    // Spin progress pulse dots
+    const progress = 1 - m.spinTimer / m.spinInterval;
+    const pulse    = 0.4 + 0.6 * Math.sin(progress * Math.PI);
+    ctx.globalAlpha = pulse * 0.9;
+    ctx.fillStyle   = def.accentColor;
+    ctx.shadowColor = def.accentColor;
+    ctx.shadowBlur  = 8;
     ctx.beginPath();
     ctx.arc(x - hw * 0.35, y - bH + hh * 0.5, 3.5, 0, Math.PI * 2);
     ctx.fill();

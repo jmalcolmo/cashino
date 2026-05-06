@@ -1,130 +1,47 @@
-// Each item: { id, name, desc, baseCost, scaleFactor, maxCount, purchased, canBuy(), onBuy() }
-// scaleFactor of 99 = effectively one-time (cost jumps to unaffordable after 1 purchase)
+// MachineShop - handles buying new machines and machine-local upgrades.
+// Global (supercomputer) upgrades are handled in supercomputer.js.
 
-const SHOP_ITEMS = [
-  {
-    id:          'slot_machine',
-    name:        'SLOT MACHINE',
-    desc:        'Place another slot machine.\nEach one brings in a customer.',
-    baseCost:    SHOP_SLOT_MACHINE_COST,
-    scaleFactor: 1.45,
-    maxCount:    8,
-    purchased:   0,
-    canBuy() { return State.floor && State.floor.findFreeTile() !== null; },
-    onBuy() {
-      const tile = State.floor.findFreeTile();
-      if (!tile) return false;
-      const m = new Machine('SLOT', tile.col, tile.row);
-      State.machines.push(m);
-      State.floor.setOccupied(tile.col, tile.row, true);
-      spawnCustomersForMachine(m);
-      return true;
-    },
-  },
-  {
-    id:          'power_click',
-    name:        'POWER CLICK',
-    desc:        '+0.5 spins per click.\nStacks up to 10x.',
-    baseCost:    SHOP_POWER_CLICK_COST,
-    scaleFactor: SHOP_POWER_CLICK_SCALE,
-    maxCount:    POWER_CLICK_MAX,
-    purchased:   0,
-    canBuy() { return true; },
-    onBuy() { State.clickMultiplier += POWER_CLICK_MULT_PER_PURCHASE; return true; },
-  },
-  {
-    id:          'spin_speed',
-    name:        'SPIN FASTER',
-    desc:        'All machines spin\n20% faster. Stacks 3x.',
-    baseCost:    1100,
-    scaleFactor: 2.2,
-    maxCount:    3,
-    purchased:   0,
-    canBuy() { return true; },
-    onBuy() {
-      State.spinSpeedMult *= 0.80;
-      State.machines.forEach(m => { m.spinInterval *= 0.80; });
-      return true;
-    },
-  },
-  {
-    id:          'auto_click',
-    name:        'AUTO CLICKER',
-    desc:        'Phantom hands click a\nrandom machine every 8s.',
-    baseCost:    4500,
-    scaleFactor: 99,
-    maxCount:    1,
-    purchased:   0,
-    canBuy() { return true; },
-    onBuy() {
-      State.autoClickInterval = AUTO_CLICK_INTERVAL;
-      State.autoClickTimer    = 0;
-      return true;
-    },
-  },
-  {
-    id:          'expand_floor',
-    name:        'EXPAND FLOOR',
-    desc:        'Grow casino from\n6x6 -> 10x10 tiles.',
-    baseCost:    SHOP_EXPAND_FLOOR_COST,
-    scaleFactor: 99,
-    maxCount:    1,
-    purchased:   0,
-    canBuy() { return true; },
-    onBuy() {
-      State.floor = new Floor(10, 10);
-      State.machines.forEach(m => {
-        const tile = State.floor.findFreeTile();
-        if (tile) {
-          m.col = tile.col;
-          m.row = tile.row;
-          State.floor.setOccupied(tile.col, tile.row, true);
-          State.customers.forEach(c => {
-            if (c.machine === m) c.assignMachine(m);
-          });
-        }
-      });
-      recalcOrigin();
-      return true;
-    },
-  },
-  {
-    id:          'splitscreen',
-    name:        'SPLITSCREEN',
-    desc:        'Each slot machine seats\n2 customers at once.\nDoubles income per spin.',
-    baseCost:    SHOP_SPLITSCREEN_COST,
-    scaleFactor: 99,
-    maxCount:    1,
-    purchased:   0,
-    canBuy() { return true; },
-    onBuy() {
-      State.splitscreen = true;
-      State.machines.forEach(m => spawnCustomer(m));
-      return true;
-    },
-  },
-];
+const MachineShop = {
 
-const Shop = {
-  visibleItems() {
-    return SHOP_ITEMS.filter(i => i.purchased < i.maxCount);
+  // Cost of the next machine purchase (starter is free, not counted here)
+  nextMachineCost() {
+    const bought = State.machines.length - 1;  // starter doesn't count
+    return Math.round(MACHINE_BASE_COST * Math.pow(MACHINE_COST_SCALE, Math.max(0, bought)));
   },
 
-  cost(item) {
-    return Math.round(item.baseCost * Math.pow(item.scaleFactor, item.purchased));
+  canBuyMachine() {
+    return (
+      State.machines.length < State.machineSlotCap &&
+      State.floor !== null &&
+      State.floor.findFreeTile() !== null &&
+      State.money >= this.nextMachineCost()
+    );
   },
 
-  canAfford(item) {
-    return State.money >= this.cost(item) && item.canBuy();
-  },
-
-  purchase(item) {
-    if (item.purchased >= item.maxCount) return false;
-    const cost = this.cost(item);
+  buyMachine() {
+    if (State.machines.length >= State.machineSlotCap) return false;
+    const tile = State.floor && State.floor.findFreeTile();
+    if (!tile) return false;
+    const cost = this.nextMachineCost();
     if (State.money < cost) return false;
-    if (!item.onBuy()) return false;
     State.money -= cost;
-    item.purchased++;
+    const m = new Machine('SLOT', tile.col, tile.row);
+    State.machines.push(m);
+    State.floor.setOccupied(tile.col, tile.row, true);
+    return true;
+  },
+
+  machineLevelCost(machine) {
+    return Math.round(MACH_LEVEL_BASE_COST * Math.pow(MACH_LEVEL_COST_SCALE, machine.machineLvl));
+  },
+
+  upgradeMachineLevel(machine) {
+    if (machine.machineLvl >= MACH_LEVEL_MAX) return false;
+    const cost = this.machineLevelCost(machine);
+    if (State.money < cost) return false;
+    State.money -= cost;
+    machine.machineLvl++;
+    machine.spinInterval = machine.effectiveInterval;
     return true;
   },
 };

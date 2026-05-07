@@ -1,31 +1,31 @@
 const State = {
-  money:            250,
-  totalEarned:      0,
-  incomePerSecond:  0,
+  money:           STARTING_MONEY,
+  totalEarned:     0,
+  incomePerSecond: 0,
 
-  machines:  [],
-  customers: [],
-  particles: [],
-  floor:     null,
+  machines:     [],
+  crowdPersons: [],
+  particles:    [],
+  floor:        null,
 
-  hype: {
-    cooldown:     0,
-    COOLDOWN_MAX: 5,
-    BOOST_DURATION: 3,
-    RADIUS:       160,
-  },
+  // Floor population: float that decays over time, boosted by floor clicks
+  floorPopulation: 0,
+  floorCapacity:   FLOOR_CAPACITY_START,
 
-  // spin speed multiplier — upgraded via shop
-  spinSpeedMult: 1.0,
+  // Global multipliers driven by supercomputer upgrades
+  globalWagerMult: 1.0,
+  globalSpeedMult: 1.0,
 
-  canvas:        null,
-  ctx:           null,
-  crtCanvas:     null,
-  crtCtx:        null,
+  // Max machines on the floor (expandable via supercomputer)
+  machineSlotCap: MACHINE_SLOT_CAP_START,
 
-  floorOriginX:  0,
-  floorOriginY:  0,
+  canvas:       null,
+  ctx:          null,
+  crtCanvas:    null,
 
-  tick:          0,
-  lastTime:      0,
+  floorOriginX: 0,
+  floorOriginY: 0,
+
+  tick:     0,
+  lastTime: 0,
 };

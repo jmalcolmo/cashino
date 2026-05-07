@@ -9,7 +9,7 @@ const CRT = {
     this.canvas = canvas;
     this.ctx    = canvas.getContext('2d');
 
-    // Off-screen noise tile — regenerated every few frames for animated grain
+    // Off-screen noise tile, regenerated every few frames for animated grain
     this._noiseCanvas        = document.createElement('canvas');
     this._noiseCanvas.width  = 200;
     this._noiseCanvas.height = 200;

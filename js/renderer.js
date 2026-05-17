@@ -109,6 +109,19 @@ const Renderer = {
     ctx.arc(x + hw * 0.35, y - bH + hh * 0.5, 3.5, 0, Math.PI * 2);
     ctx.fill();
 
+    // Customer count badge
+    const customersHere = State.crowdPersons.filter(p => p.assignedMachine === m).length;
+    if (customersHere > 0) {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 8;
+      ctx.font = 'bold 10px "Press Start 2P"';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('x' + customersHere, x, y - bH - 8);
+    }
+
     ctx.restore();
   },
 

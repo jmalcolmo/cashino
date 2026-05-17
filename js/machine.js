@@ -19,6 +19,48 @@ const MACHINE_DEFS = {
       { chance: SPIN_JACKPOT_CHANCE,    label: 'jackpot', amount: () => SPIN_JACKPOT_MIN    + Math.random() * (SPIN_JACKPOT_MAX    - SPIN_JACKPOT_MIN)    },
     ],
   },
+
+  POKER: {
+    name:             'Poker Machine',
+    tileSize:         1,
+    baseSpinInterval: POKER_SPIN_INTERVAL_BASE,
+    boxH:             MACHINE_BOX_H_POKER,
+    colors: {
+      top:        '#2a0f40',
+      left:       '#16072a',
+      right:      '#0a0218',
+      topStroke:  '#9b30ff',
+      sideStroke: '#3d1a5a',
+    },
+    accentColor: '#9b30ff',
+    spinTable: [
+      { chance: POKER_SMALL_WIN_CHANCE,  label: 'win',     amount: () => POKER_SMALL_WIN_MIN  + Math.random() * (POKER_SMALL_WIN_MAX  - POKER_SMALL_WIN_MIN)  },
+      { chance: POKER_LOSS_CHANCE,       label: 'loss',    amount: () => POKER_LOSS_MIN       + Math.random() * (POKER_LOSS_MAX       - POKER_LOSS_MIN)        },
+      { chance: POKER_MEDIUM_WIN_CHANCE, label: 'win',     amount: () => POKER_MEDIUM_WIN_MIN + Math.random() * (POKER_MEDIUM_WIN_MAX - POKER_MEDIUM_WIN_MIN) },
+      { chance: POKER_JACKPOT_CHANCE,    label: 'jackpot', amount: () => POKER_JACKPOT_MIN    + Math.random() * (POKER_JACKPOT_MAX    - POKER_JACKPOT_MIN)    },
+    ],
+  },
+
+  BLACKJACK: {
+    name:             'Blackjack Table',
+    tileSize:         2,
+    baseSpinInterval: BLACKJACK_SPIN_INTERVAL_BASE,
+    boxH:             MACHINE_BOX_H_BLACKJACK,
+    colors: {
+      top:        '#3d2818',
+      left:       '#2a1a0f',
+      right:      '#1a0f08',
+      topStroke:  '#ffd700',
+      sideStroke: '#5a4020',
+    },
+    accentColor: '#ffd700',
+    spinTable: [
+      { chance: BLACKJACK_SMALL_WIN_CHANCE,  label: 'win',     amount: () => BLACKJACK_SMALL_WIN_MIN  + Math.random() * (BLACKJACK_SMALL_WIN_MAX  - BLACKJACK_SMALL_WIN_MIN)  },
+      { chance: BLACKJACK_LOSS_CHANCE,       label: 'loss',    amount: () => BLACKJACK_LOSS_MIN       + Math.random() * (BLACKJACK_LOSS_MAX       - BLACKJACK_LOSS_MIN)        },
+      { chance: BLACKJACK_MEDIUM_WIN_CHANCE, label: 'win',     amount: () => BLACKJACK_MEDIUM_WIN_MIN + Math.random() * (BLACKJACK_MEDIUM_WIN_MAX - BLACKJACK_MEDIUM_WIN_MIN) },
+      { chance: BLACKJACK_JACKPOT_CHANCE,    label: 'jackpot', amount: () => BLACKJACK_JACKPOT_MIN    + Math.random() * (BLACKJACK_JACKPOT_MAX    - BLACKJACK_JACKPOT_MIN)    },
+    ],
+  },
 };
 
 class Machine {
@@ -35,6 +77,8 @@ class Machine {
     this.reelPhase    = Math.random() * Math.PI * 2;
 
     this.machineLvl = 0;
+
+    this.spinCount = 0;  // track total spins for customer departure logic
   }
 
   get localSpeedMult() {
@@ -65,6 +109,7 @@ class Machine {
   }
 
   doSpin() {
+    this.spinCount++;
     const crowdMult = 1 + (State.floorPopulation / FLOOR_CAPACITY_START) * CROWD_MULT_BONUS_BASE;
 
     const roll = Math.random();

@@ -61,30 +61,54 @@ const UI = {
         <span class="op-title">SUPERCOMPUTER</span>
         <button class="op-close" onclick="UI.closeAllPanels()">X</button>
       </div>
-      <div class="op-tier-label">TIER 1</div>
-      <div class="op-list">`;
+      <div class="op-scroll">`;
 
+    // Group upgrades by tier
+    const tiers = {};
     for (const upg of SC_UPGRADES) {
-      const maxed     = upg.level >= upg.maxLevel;
-      const cost      = upg.cost(upg.level);
-      const canAfford = !maxed && State.money >= cost;
-      const cls       = 'op-row' + (maxed ? ' maxed' : canAfford ? ' affordable' : '');
+      if (!tiers[upg.tier]) tiers[upg.tier] = [];
+      tiers[upg.tier].push(upg);
+    }
 
-      html += `
-        <div class="${cls}" data-upg-id="${upg.id}">
-          <div class="op-row-top">
-            <span class="op-row-name">${upg.name}</span>
-            <span class="op-row-lvl">Lv ${upg.level}/${upg.maxLevel}</span>
-          </div>
-          <div class="op-row-desc">${upg.desc}</div>
-          <div class="op-row-bottom">
-            <span class="op-row-effect">${upg.effectText()}</span>
-            <button class="op-buy-btn" ${maxed ? 'disabled' : ''}
-              onclick="UI._buySC('${upg.id}')">
-              ${maxed ? 'MAXED' : formatMoney(cost)}
-            </button>
-          </div>
-        </div>`;
+    // Render each tier
+    for (const tierNum of Object.keys(tiers).sort((a, b) => parseInt(a) - parseInt(b))) {
+      const tier = tiers[tierNum];
+      html += `<div class="op-tier-label">TIER ${tierNum}</div>`;
+      html += `<div class="op-list">`;
+
+      for (const upg of tier) {
+        const isUnlocked = !upg.isUnlocked || upg.isUnlocked();
+        const maxed      = upg.level >= upg.maxLevel;
+        const cost       = upg.cost(upg.level);
+        const canAfford  = !maxed && State.money >= cost && isUnlocked;
+
+        let rowClass = 'op-row';
+        if (!isUnlocked) {
+          rowClass += ' locked';
+        } else if (maxed) {
+          rowClass += ' maxed';
+        } else if (canAfford) {
+          rowClass += ' affordable';
+        }
+
+        html += `
+          <div class="${rowClass}" data-upg-id="${upg.id}">
+            <div class="op-row-top">
+              <span class="op-row-name">${upg.name}</span>
+              <span class="op-row-lvl">${isUnlocked ? `Lv ${upg.level}/${upg.maxLevel}` : 'LOCKED'}</span>
+            </div>
+            <div class="op-row-desc">${upg.desc}</div>
+            <div class="op-row-bottom">
+              <span class="op-row-effect">${isUnlocked ? upg.effectText() : 'Max T' + (parseInt(tierNum) - 1) + ' first'}</span>
+              <button class="op-buy-btn" ${!isUnlocked || maxed ? 'disabled' : ''}
+                onclick="UI._buySC('${upg.id}')">
+                ${!isUnlocked ? 'LOCKED' : maxed ? 'MAXED' : formatMoney(cost)}
+              </button>
+            </div>
+          </div>`;
+      }
+
+      html += `</div>`;
     }
 
     html += `</div>`;
@@ -104,14 +128,25 @@ const UI = {
     for (const upg of SC_UPGRADES) {
       const row = panel.querySelector(`[data-upg-id="${upg.id}"]`);
       if (!row) continue;
-      const maxed     = upg.level >= upg.maxLevel;
-      const cost      = upg.cost(upg.level);
-      const canAfford = !maxed && State.money >= cost;
-      row.className   = 'op-row' + (maxed ? ' maxed' : canAfford ? ' affordable' : '');
+      const isUnlocked = !upg.isUnlocked || upg.isUnlocked();
+      const maxed      = upg.level >= upg.maxLevel;
+      const cost       = upg.cost(upg.level);
+      const canAfford  = !maxed && State.money >= cost && isUnlocked;
+
+      let className = 'op-row';
+      if (!isUnlocked) {
+        className += ' locked';
+      } else if (maxed) {
+        className += ' maxed';
+      } else if (canAfford) {
+        className += ' affordable';
+      }
+      row.className = className;
+
       const btn = row.querySelector('.op-buy-btn');
       if (btn) {
-        btn.disabled    = maxed;
-        btn.textContent = maxed ? 'MAXED' : formatMoney(cost);
+        btn.disabled    = !isUnlocked || maxed;
+        btn.textContent = !isUnlocked ? 'LOCKED' : maxed ? 'MAXED' : formatMoney(cost);
       }
     }
   },

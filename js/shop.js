@@ -18,16 +18,40 @@ const MachineShop = {
     );
   },
 
-  buyMachine() {
+  buyMachine(type = 'SLOT') {
     if (State.machines.length >= State.machineSlotCap) return false;
-    const tile = State.floor && State.floor.findFreeTile();
-    if (!tile) return false;
     const cost = this.nextMachineCost();
     if (State.money < cost) return false;
+    const def = MACHINE_DEFS[type];
+    if (!def) return false;
+
+    let tile;
+    if (def.tileSize === 1) {
+      tile = State.floor && State.floor.findFreeTile();
+      if (!tile) return false;
+    } else if (def.tileSize === 2) {
+      const candidates = [];
+      for (let r = 1; r < State.floor.rows - 2; r++) {
+        for (let c = 1; c < State.floor.cols - 2; c++) {
+          if (!State.floor.isOccupied(c, r) && !State.floor.isOccupied(c + 1, r) &&
+              !State.floor.isOccupied(c, r + 1) && !State.floor.isOccupied(c + 1, r + 1)) {
+            candidates.push({ col: c, row: r });
+          }
+        }
+      }
+      if (!candidates.length) return false;
+      tile = candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
     State.money -= cost;
-    const m = new Machine('SLOT', tile.col, tile.row);
+    const m = new Machine(type, tile.col, tile.row);
     State.machines.push(m);
     State.floor.setOccupied(tile.col, tile.row, true);
+    if (def.tileSize === 2) {
+      State.floor.setOccupied(tile.col + 1, tile.row, true);
+      State.floor.setOccupied(tile.col, tile.row + 1, true);
+      State.floor.setOccupied(tile.col + 1, tile.row + 1, true);
+    }
     return true;
   },
 

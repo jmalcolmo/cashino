@@ -55,6 +55,85 @@ const SC_UPGRADES = [
       return (FLOOR_CAPACITY_START + this.level * SC_T1_CAPACITY_PER_LEVEL) + ' cap';
     },
   },
+
+  // ── Tier 2 Upgrades ──────────────────────────────────────────────────────
+  {
+    id:       'wager_t2',
+    name:     'WAGER BOOST II',
+    desc:     'Further increase all machine payouts.',
+    tier:     2,
+    maxLevel: SC_T2_WAGER_LEVELS,
+    level:    0,
+    cost(lvl) {
+      return Math.round(SC_T2_WAGER_BASE_COST * Math.pow(SC_T2_WAGER_SCALE, lvl));
+    },
+    apply() {
+      // T1 multiplier stacks with T2
+      const t1 = Math.pow(1 + SC_T1_WAGER_PER_LEVEL, SC_UPGRADES[0].level);
+      const t2 = Math.pow(1 + SC_T2_WAGER_PER_LEVEL, this.level);
+      State.globalWagerMult = t1 * t2;
+    },
+    effectText() {
+      const t1 = Math.pow(1 + SC_T1_WAGER_PER_LEVEL, SC_UPGRADES[0].level);
+      const t2 = Math.pow(1 + SC_T2_WAGER_PER_LEVEL, this.level);
+      return (t1 * t2).toFixed(2) + 'x total';
+    },
+    isUnlocked() {
+      return SC_UPGRADES[0].level >= SC_UPGRADES[0].maxLevel;
+    },
+  },
+
+  {
+    id:       'rollrate_t2',
+    name:     'ROLL RATE II',
+    desc:     'Make machines spin even faster.',
+    tier:     2,
+    maxLevel: SC_T2_ROLLRATE_LEVELS,
+    level:    0,
+    cost(lvl) {
+      return Math.round(SC_T2_ROLLRATE_BASE_COST * Math.pow(SC_T2_ROLLRATE_SCALE, lvl));
+    },
+    apply() {
+      const t1 = Math.pow(1 - SC_T1_ROLLRATE_PER_LEVEL, SC_UPGRADES[1].level);
+      const t2 = Math.pow(1 - SC_T2_ROLLRATE_PER_LEVEL, this.level);
+      State.globalSpeedMult = t1 * t2;
+      State.machines.forEach(m => { m.spinInterval = m.effectiveInterval; });
+    },
+    effectText() {
+      const t1 = Math.pow(1 - SC_T1_ROLLRATE_PER_LEVEL, SC_UPGRADES[1].level);
+      const t2 = Math.pow(1 - SC_T2_ROLLRATE_PER_LEVEL, this.level);
+      const faster = (1 / Math.max(0.01, t1 * t2)).toFixed(2);
+      return faster + 'x total';
+    },
+    isUnlocked() {
+      return SC_UPGRADES[1].level >= SC_UPGRADES[1].maxLevel;
+    },
+  },
+
+  {
+    id:       'capacity_t2',
+    name:     'FLOOR CAPACITY II',
+    desc:     'Even more people on the floor.',
+    tier:     2,
+    maxLevel: SC_T2_CAPACITY_LEVELS,
+    level:    0,
+    cost(lvl) {
+      return Math.round(SC_T2_CAPACITY_BASE_COST * Math.pow(SC_T2_CAPACITY_SCALE, lvl));
+    },
+    apply() {
+      const t1 = FLOOR_CAPACITY_START + SC_UPGRADES[2].level * SC_T1_CAPACITY_PER_LEVEL;
+      const t2 = this.level * SC_T2_CAPACITY_PER_LEVEL;
+      State.floorCapacity = t1 + t2;
+    },
+    effectText() {
+      const t1 = FLOOR_CAPACITY_START + SC_UPGRADES[2].level * SC_T1_CAPACITY_PER_LEVEL;
+      const t2 = this.level * SC_T2_CAPACITY_PER_LEVEL;
+      return (t1 + t2) + ' cap';
+    },
+    isUnlocked() {
+      return SC_UPGRADES[2].level >= SC_UPGRADES[2].maxLevel;
+    },
+  },
 ];
 
 // ── Supercomputer visual entity ───────────────────────────────────────────────
@@ -171,7 +250,9 @@ const Supercomputer = {
 
   purchase(id) {
     const upg = SC_UPGRADES.find(u => u.id === id);
-    if (!upg || upg.level >= upg.maxLevel) return false;
+    if (!upg) return false;
+    if (upg.level >= upg.maxLevel) return false;
+    if (upg.isUnlocked && !upg.isUnlocked()) return false;  // Check if tier is unlocked
     const cost = upg.cost(upg.level);
     if (State.money < cost) return false;
     State.money -= cost;

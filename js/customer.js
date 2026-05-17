@@ -20,12 +20,17 @@ class CrowdPerson {
     this.size  = CROWD_PERSON_SIZE;
     this.bob   = Math.random() * Math.PI * 2;
 
-    this.lifetime   = CROWD_PERSON_LIFETIME_MIN + Math.random() * (CROWD_PERSON_LIFETIME_MAX - CROWD_PERSON_LIFETIME_MIN);
     this.age        = 0;
     this.state      = 'moving';  // moving | idle | cheering | leaving
     this.idleTimer  = 0;
     this.cheerTimer = 0;
     this.alpha      = 1;
+
+    // Machine assignment & spin tracking
+    this.assignedMachine   = null;
+    this.spinsAtMachine    = 0;
+    this.lastMachineSpins  = 0;
+    this.departureStartAge = null;
 
     this._pickTarget();
   }
@@ -34,14 +39,18 @@ class CrowdPerson {
     if (State.machines.length > 0 && Math.random() < 0.7) {
       const m  = State.machines[Math.floor(Math.random() * State.machines.length)];
       const sp = m.screenPos;
-      this.tx  = sp.x + (Math.random() - 0.5) * 50;
-      this.ty  = sp.y + ISO.TILE_H * 0.75 + (Math.random() - 0.5) * 14;
+      this.assignedMachine = m;
+      this.spinsAtMachine = 0;
+      this.lastMachineSpins = m.spinCount;
+      this.tx = sp.x + (Math.random() - 0.5) * 50;
+      this.ty = sp.y + ISO.TILE_H * 0.75 + (Math.random() - 0.5) * 14;
     } else if (State.floor) {
       const c  = 1 + Math.floor(Math.random() * (State.floor.cols - 2));
       const r  = 1 + Math.floor(Math.random() * (State.floor.rows - 2));
       const sp = ISO.toScreen(c, r, State.floorOriginX, State.floorOriginY);
-      this.tx  = sp.x + (Math.random() - 0.5) * 20;
-      this.ty  = sp.y + ISO.TILE_H * 0.5;
+      this.assignedMachine = null;
+      this.tx = sp.x + (Math.random() - 0.5) * 20;
+      this.ty = sp.y + ISO.TILE_H * 0.5;
     }
     this.state = 'moving';
   }
@@ -59,19 +68,31 @@ class CrowdPerson {
   update(dt) {
     this.age += dt;
 
-    if (this.age >= this.lifetime && this.state !== 'leaving') {
-      this.state = 'leaving';
-      const ox   = State.floorOriginX;
-      const oy   = State.floorOriginY;
-      this.tx    = ox + (Math.random() - 0.5) * 30;
-      this.ty    = oy + (State.floor.cols + State.floor.rows) * ISO.TILE_H / 2 + 80;
+    // Track spins at assigned machine
+    if (this.assignedMachine && this.state === 'idle') {
+      const newSpins = this.assignedMachine.spinCount - this.lastMachineSpins;
+      this.spinsAtMachine += newSpins;
+      this.lastMachineSpins = this.assignedMachine.spinCount;
+
+      if (this.spinsAtMachine >= CUSTOMER_SPINS_BEFORE_DEPARTURE && this.state !== 'leaving') {
+        this.state = 'leaving';
+        this.departureStartAge = this.age;
+        const ox = State.floorOriginX;
+        const oy = State.floorOriginY;
+        this.tx = ox + (Math.random() - 0.5) * 30;
+        this.ty = oy + (State.floor.cols + State.floor.rows) * ISO.TILE_H / 2 + 80;
+        State.floorPopulation = Math.max(0, State.floorPopulation - 1);
+      }
     }
 
     if (this.state === 'leaving') {
       this._moveToward(dt);
-      const remaining = (this.lifetime + 3) - this.age;
-      this.alpha = Math.max(0, remaining / 3);
-      return this.alpha > 0;
+      const elapsed = this.age - this.departureStartAge;
+      this.alpha = Math.max(0, 1 - (elapsed / CUSTOMER_DEPARTURE_DURATION));
+      if (this.alpha <= 0) {
+        return false;
+      }
+      return true;
     }
 
     if (this.state === 'moving') {

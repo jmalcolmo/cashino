@@ -5,6 +5,29 @@ The top entry is always the most recent push. Entries are added before every com
 
 ---
 
+## [0.6.0] 2026-05-16 - Customer departure, respawn cycle, machine types expansion
+
+### Added
+- Customer lifecycle: CrowdPersons now track assigned machines and spin count, triggering departure after N spins
+- `CUSTOMER_SPINS_BEFORE_DEPARTURE` (6): threshold for customer departure from a machine
+- `CUSTOMER_DEPARTURE_DURATION` (1.2s): time for customer to walk off floor and fade out
+- `CUSTOMER_RESPAWN_DELAY` (0.5s): delay before replacement customer auto-spawns after departure
+- Machine.spinCount tracking: each machine tracks total spins for customer lifecycle logic
+- Auto-respawn queue: when customers complete departure animation, replacements automatically spawn
+- Customer count badge: `x N` visual indicator above machines showing active customers
+- spawnCrowdAtEntrance() helper: spawns customers at floor entrance for respawn system
+- Poker Machine (Tier 2): 1x1 tile, 1.8s spin interval, higher variance, purple/blue aesthetic
+- Blackjack Table (Tier 3): 2x2 tile, 4.0s spin interval, balanced variance, gold/brown aesthetic
+- Machine type constants: POKER_* and BLACKJACK_* spin table probabilities and payout ranges
+
+### Changed
+- CrowdPerson now has assignedMachine, spinsAtMachine, lastMachineSpins fields to track seating
+- CrowdPerson departure now decrements floorPopulation when leaving (previously only decayed)
+- CrowdPerson update() method checks spin count at assigned machine to trigger departure
+- MACHINE_DEFS expanded to include POKER and BLACKJACK definitions alongside SLOT
+
+---
+
 ## [0.5.1] 2026-05-05 - Spin table rebalance: reduced jackpot rate and loss payout
 
 ### Changed

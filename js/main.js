@@ -9,6 +9,17 @@ function recalcOrigin() {
   State.floorOriginY = Math.round((H - floorH) / 2) + FLOOR_ORIGIN_Y_PAD;
 }
 
+function spawnCrowdAtEntrance() {
+  const ox = State.floorOriginX;
+  const oy = State.floorOriginY;
+  const entranceY = oy + (State.floor.cols + State.floor.rows) * ISO.TILE_H / 2;
+  const spawnX = ox + (Math.random() - 0.5) * 60;
+  const spawnY = entranceY + 40 + Math.random() * 10;
+  const person = new CrowdPerson(spawnX, spawnY);
+  State.crowdPersons.push(person);
+  State.floorPopulation = Math.min(State.floorCapacity, State.floorPopulation + 1);
+}
+
 function processSpinResult(machine, amount) {
   State.money += amount;
   if (State.money < 0) State.money = 0;
@@ -74,6 +85,9 @@ function init() {
 const _incomeWindow    = [];
 const _earningsHistory = [];
 
+// ── Customer respawn tracking ──────────────────────────────────────────────────
+const _respawnQueue = [];  // { spawnAt: timestamp, count: number }
+
 function recordIncome(amount) {
   const entry = { t: State.tick, v: amount };
 
@@ -105,6 +119,14 @@ function loop(now) {
   // Floor population decay
   State.floorPopulation = Math.max(0, State.floorPopulation - FLOOR_POPULATION_DECAY * dt);
 
+  // Process respawn queue
+  while (_respawnQueue.length > 0 && _respawnQueue[0].spawnAt <= State.tick) {
+    const entry = _respawnQueue.shift();
+    for (let i = 0; i < entry.count; i++) {
+      spawnCrowdAtEntrance();
+    }
+  }
+
   // Supercomputer animation
   Supercomputer.update(dt);
 
@@ -114,8 +136,16 @@ function loop(now) {
     if (spin !== null) processSpinResult(m, spin);
   });
 
-  // Crowd persons (visual only)
-  State.crowdPersons = State.crowdPersons.filter(p => p.update(dt));
+  // Crowd persons (visual only) - track departures for respawn
+  const beforeCount = State.crowdPersons.length;
+  State.crowdPersons = State.crowdPersons.filter(p => {
+    const alive = p.update(dt);
+    if (!alive && p.state === 'leaving') {
+      // Customer finished leaving - schedule respawn
+      _respawnQueue.push({ spawnAt: State.tick + CUSTOMER_RESPAWN_DELAY, count: 1 });
+    }
+    return alive;
+  });
 
   // Particles
   State.particles = State.particles.filter(p => p.update(dt));

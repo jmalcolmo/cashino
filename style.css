@@ -251,12 +251,15 @@ html, body {
   scrollbar-color: var(--blue) transparent;
 }
 
-/* Supercomputer panel: top-right of canvas area */
+/* Supercomputer panel: full-height right-side area */
 #sc-panel {
-  top: 8px;
-  right: 8px;
-  min-width: 240px;
-  max-width: 280px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
 }
 
 /* Machine panel: positioned near machine by JS */
@@ -304,6 +307,16 @@ html, body {
   color: var(--red);
 }
 
+/* ── Scroll container for tiers ──────────────────────── */
+
+.op-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Tier label ──────────────────────────────────────── */
 
 .op-tier-label {
@@ -311,6 +324,10 @@ html, body {
   color: #557;
   letter-spacing: 3px;
   padding: 8px 14px 4px;
+  position: sticky;
+  top: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 10;
 }
 
 /* ── SC upgrade list ─────────────────────────────────── */
@@ -336,6 +353,12 @@ html, body {
 
 .op-row.maxed {
   opacity: 0.3;
+}
+
+.op-row.locked {
+  opacity: 0.5;
+  border-color: rgba(255,51,51,0.2);
+  background: rgba(255,51,51,0.02);
 }
 
 .op-row-top {

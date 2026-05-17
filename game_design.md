@@ -280,49 +280,72 @@ Each definition contains:
 - `accentColor` - neon color for lights and glow
 - `spinTable[]` - array of `{ chance, label, amount }` entries summing to 1.0
 
-### 5.4 Machine Progression (planned)
-| Tier | Name | Tile Size | Max Customers | Spin Interval | Notes |
-|---|---|---|---|---|---|
-| 1 | Slot Machine | 1×1 | 1 | 2.2s | Current |
-| 2 | Poker Machine | 1×1 | 1 | 1.8s | Faster, higher variance |
-| 3 | Blackjack Table | 2×2 | 4 | 4.0s | Multi-customer, dealer NPC |
-| 4 | Craps Table | 2×3 | 6 | 5.0s | Biggest win animations, crowd forms |
-| 5+ | TBD | - | - | - | Escalates from there |
+### 5.4 Machine Progression & Costs
+| Tier | Name | Tile Size | Spin Interval | Est. Cost | EV/spin | Variance | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | Slot Machine | 1×1 | 2.2s | $20 (scale x3.0) | $1.63 | Medium | Implemented |
+| 2 | Poker Machine | 1×1 | 1.8s | ~$60 (1st) | $1.85 | High | Implemented |
+| 3 | Blackjack Table | 2×2 | 4.0s | ~$180 (1st) | $2.40 | Medium | Implemented |
+| 4 | Craps Table | 2×3 | 5.0s | ~$500+ | $3.20 | Extreme | Planned |
+| 5 | Roulette Wheel | 2×3 | 3.5s | ~$400+ | $2.80 | Low-med | Planned |
 
-Higher tier machines should feel meaningfully busier: more customers crowding around, dealer NPCs, bigger/louder win animations.
+**Cost Scaling:** Each machine purchase multiplies cost by 3.0. Slot #1 = $20, #2 = $60, #3 = $180, #4 = $540...
+(Poker and Blackjack start fresh at Tier 1 pricing when first purchased)
+
+**Machine Spin Tables:**
+
+**Slot (Tier 1):**
+- 59% small wins ($3-6), 20% losses (-$2 to -$5), 20% medium wins ($5-10), 1% jackpots (-$14 to -$28)
+- EV: ~$1.63/spin, house always wins in aggregate
+
+**Poker (Tier 2):**
+- 45% small wins ($2-5), 25% losses (-$3 to -$6), 25% medium wins ($6-14), 5% jackpots (-$18 to -$35)
+- Higher variance: fewer small guaranteed wins, but bigger jackpots possible
+- EV: ~$1.85/spin (better house odds for faster gameplay)
+
+**Blackjack (Tier 3):**
+- 50% small wins ($4-8), 22% losses (-$4 to -$8), 22% medium wins ($8-18), 6% jackpots (-$24 to -$42)
+- Balanced variance: good mix of steady wins and big swings
+- EV: ~$2.40/spin (best income, but slower spin rate justifies cost)
 
 ### 5.5 Machine Visual Rendering
 Drawn in `renderer._drawMachine`:
 1. `ISO.drawBox` - main cabinet (3 faces, neon top edge)
 2. Animated reel light - color cycles through neon palette using `reelPhase`, pulsing arc on top face
 3. Spin progress lights - two small dots on the top face pulse in sync with spin countdown
-4. Customer count badge - `×N` above machine when customers are seated
+4. CrowdPerson count badge - gold `×N` label above machine (N = count of CrowdPersons with assignedMachine === this machine)
 5. Shake offset - if `shakeTimer > 0`, random x/y displacement applied to draw position each frame
 
 ---
 
 ## 6. Customer System
 
-### 6.1 Customer Class
-Each `Customer` instance has:
+### 6.1 CrowdPerson Class
+Each `CrowdPerson` instance has:
 - `id` - monotonically incrementing for palette cycling
 - `x, y` - current screen position (world-space, not tile-space)
 - `tx, ty` - target screen position
-- `machine` - reference to assigned Machine
-- `state` - `'moving'` or `'playing'`
+- `assignedMachine` - reference to assigned Machine (null if wandering)
+- `state` - `'moving'`, `'idle'`, `'cheering'`, or `'leaving'`
 - `color` - cycling from 8-color palette
-- `speed` - 65-90 px/sec base movement (fixed; no boost modifier)
+- `speed` - 50-80 px/sec base movement (fixed)
 - `size` - 7px radius circle
 - `bob` - per-customer phase offset for idle bobbing animation
+- `spinsAtMachine` - spin counter for departure threshold
+- `lastMachineSpins` - cached machine spin count for delta detection
+- `departureStartAge` - timestamp when departure animation began
 
 ### 6.2 Lifecycle
-1. Spawned from `spawnCustomer(machine)` in `main.js`
-2. Spawn point: bottom-most diamond vertex of the floor (the entrance), ±15px horizontal jitter
-3. `assignMachine(machine)` - sets target position just in front of the machine tile; adds self to `machine.customers[]`
-4. Moves toward target at `speed × dt` each frame (linear interpolation)
-5. On arrival: state transitions to `'playing'`
-6. Machine will only spin if `machine.customers.length > 0`
-7. No departure logic yet - customers stay permanently (planned: they leave after N spins, new one arrives)
+1. Spawned via floor clicks (`Input.js`) or auto-respawn (`spawnCrowdAtEntrance()`)
+2. Spawn point: floor entrance (bottom-most diamond vertex), ±30px horizontal jitter
+3. Pick target: 70% chance to target a random machine, 30% to wander to random floor tile
+4. Walk toward target at `speed * dt` each frame
+5. On arrival: transition to `'idle'`, set idle timer (2-7 seconds)
+6. While idle at a machine: count spins via `Machine.spinCount` delta
+7. After `CUSTOMER_SPINS_BEFORE_DEPARTURE` (6) spins: trigger `'leaving'` state and decrement `State.floorPopulation` by 1
+8. Departure animation: walk toward floor exit over `CUSTOMER_DEPARTURE_DURATION` (1.2s), fade alpha to 0
+9. On alpha <= 0: remove from `crowdPersons[]` array, trigger respawn queue entry
+10. Auto-respawn: new CrowdPerson spawns after `CUSTOMER_RESPAWN_DELAY` (0.5s)
 
 ### 6.3 Customer Rendering
 - Drop shadow ellipse below feet
